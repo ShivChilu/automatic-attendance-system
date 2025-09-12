@@ -2,11 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "./App.css";
 // shadcn ui components
-import { Button } from "./src/components/ui/button";
-import { Card } from "./src/components/ui/card";
-import { Input } from "./src/components/ui/input";
-import { Label } from "./src/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./src/components/ui/tabs";
+import { Button } from "./components/ui/button";
+import { Card } from "./components/ui/card";
+import { Input } from "./components/ui/input";
+import { Label } from "./components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
