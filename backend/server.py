@@ -364,6 +364,23 @@ async def create_teacher(payload: UserCreate, current: dict = Depends(require_ro
         id=user_doc["id"], full_name=user_doc["full_name"], email=user_doc["email"], role='TEACHER',
         phone=user_doc.get("phone"), school_id=school_id, created_at=user_doc["created_at"]
     )
+# Resend credentials (GOV_ADMIN only)
+class ResendReq(BaseModel):
+    email: EmailStr
+    temp_password: Optional[str] = None
+
+@api.post("/users/resend-credentials")
+async def resend_credentials(payload: ResendReq, _: dict = Depends(require_roles('GOV_ADMIN'))):
+    user = await db.users.find_one({"email": payload.email.lower()})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    # Generate or use provided temp password
+    temp = payload.temp_password or secrets.token_urlsafe(8)
+    await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_password(temp)}})
+    role_human = 'Teacher' if user['role']=='TEACHER' else ('School Admin' if user['role']=='SCHOOL_ADMIN' else 'Government Admin')
+    send_res = await brevo_send_credentials(user['email'], user['full_name'], role_human, user['email'], temp)
+    return {"sent": bool(send_res.get('success')), "email": user['email'], "role": user['role'], "brevo": send_res}
+
 
 # ---------- Startup tasks: indexes + seeding ----------
 @app.on_event("startup")
