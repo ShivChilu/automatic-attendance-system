@@ -1,34 +1,43 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+:root {
+  --bg: #0b1020;
+  --panel: #0f172a;
+  --text: #e6edf3;
+  --muted: #98a2b3;
+  --primary: #2ea37a;
+  --primary-ink: #0a2e23;
+  --ring: rgba(46,163,122,0.35);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
-}
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body { margin: 0; background: radial-gradient(1200px 600px at 20% -10%, rgba(46,163,122,0.08), transparent), #0b1020; color: var(--text); font-family: "Figtree", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
-}
+.topbar { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px); background: rgba(11,16,32,0.6); border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; }
+.brand { font-weight: 700; letter-spacing: 0.2px; }
+.user_box { display: flex; gap: 12px; align-items: center; }
+.small { font-size: 12px; }
 
-.App-link {
-    color: #61dafb;
-}
+.container { display: grid; place-items: center; padding: 64px 16px; }
+.auth_box { width: 100%; max-width: 420px; background: var(--panel); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+.heading { margin: 0 0 18px; }
+.form_row { display: grid; gap: 8px; margin-bottom: 14px; }
+.select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text); outline: none; }
+.select:focus { border-color: var(--ring); box-shadow: 0 0 0 4px var(--ring); }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
+.btn_primary { background: var(--primary) !important; color: #071a14 !important; border-radius: 999px !important; padding: 10px 16px !important; }
+.btn_secondary { background: transparent !important; color: var(--text) !important; border: 1px solid rgba(255,255,255,0.16) !important; border-radius: 999px !important; padding: 8px 14px !important; }
+
+.error_text { color: #ff7b7b; font-size: 14px; margin: 6px 0 10px; }
+.muted { color: var(--muted); }
+.mt { margin-top: 8px; }
+
+.dash_grid { padding: 24px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+.card { background: var(--panel); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 18px; grid-column: span 4; }
+.card.wide { grid-column: span 12; }
+
+.table_wrap { overflow: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); }
+.table_wrap table { width: 100%; border-collapse: collapse; }
+.table_wrap th, .table_wrap td { text-align: left; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.table_wrap th { color: var(--muted); font-weight: 500; }
+
+.note { color: var(--muted); margin-top: 8px; font-size: 13px; }
