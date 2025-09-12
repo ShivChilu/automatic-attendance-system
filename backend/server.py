@@ -402,6 +402,20 @@ async def on_startup():
             _ = await brevo_send_credentials(gov_email, gov_name, 'Government Admin', gov_email, temp)
             logger.info("Seeded Government Admin user")
 
+        # If GOV_ADMIN exists and password provided, update password
+        if gov_email and gov_pass:
+            existing_gov = await db.users.find_one({"email": gov_email.lower()})
+            if existing_gov and existing_gov.get("role") == 'GOV_ADMIN':
+                await db.users.update_one({"id": existing_gov["id"]}, {"$set": {"password_hash": hash_password(gov_pass)}})
+                logger.info("Updated Government Admin password from seed env")
+
+        # If SCHOOL_ADMIN exists and password provided, update password
+        if school_admin_email and school_admin_pass:
+            existing_sa = await db.users.find_one({"email": school_admin_email.lower()})
+            if existing_sa and existing_sa.get("role") == 'SCHOOL_ADMIN':
+                await db.users.update_one({"id": existing_sa["id"]}, {"$set": {"password_hash": hash_password(school_admin_pass)}})
+                logger.info("Updated School Admin password from seed env")
+
         # Seed School and School Admin
         school_id = None
         if school_name:
