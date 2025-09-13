@@ -226,6 +226,9 @@ class AttendanceAPITester:
         if not self.created_school_id:
             print("❌ Skipping teacher creation - no school available")
             return False
+        
+        import time
+        timestamp = str(int(time.time()))
             
         success, response = self.run_test(
             "Create Teacher",
@@ -233,8 +236,8 @@ class AttendanceAPITester:
             "/users/teachers",
             200,
             data={
-                "full_name": "Rajesh Kumar Sharma",
-                "email": "rajesh.sharma@testschool.edu.in",
+                "full_name": f"Rajesh Kumar Sharma {timestamp}",
+                "email": f"rajesh.sharma.{timestamp}@testschool.edu.in",
                 "role": "TEACHER",
                 "phone": "9876543211",
                 "subject": "Math",
@@ -252,6 +255,9 @@ class AttendanceAPITester:
         if not self.created_school_id:
             print("❌ Skipping co-admin creation - no school available")
             return False
+        
+        import time
+        timestamp = str(int(time.time()) + 2)
             
         success, response = self.run_test(
             "Create Co-Admin",
@@ -259,8 +265,8 @@ class AttendanceAPITester:
             "/users/coadmins",
             200,
             data={
-                "full_name": "Priya Reddy",
-                "email": "priya.reddy@testschool.edu.in",
+                "full_name": f"Priya Reddy {timestamp}",
+                "email": f"priya.reddy.{timestamp}@testschool.edu.in",
                 "role": "CO_ADMIN",
                 "phone": "9876543212",
                 "school_id": self.created_school_id
