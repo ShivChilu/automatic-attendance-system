@@ -124,15 +124,18 @@ class AttendanceAPITester:
 
     def test_create_school(self):
         """Test creating a school as GOV_ADMIN"""
+        import time
+        timestamp = str(int(time.time()))
+        
         success, response = self.run_test(
             "Create School (Basic)",
             "POST",
             "/schools",
             200,
             data={
-                "name": "Basic Test School",
-                "principal_name": "Mr. Ramesh Gupta", 
-                "principal_email": "ramesh.gupta@testschool.edu.in"
+                "name": f"Basic Test School {timestamp}",
+                "principal_name": f"Mr. Ramesh Gupta {timestamp}", 
+                "principal_email": f"ramesh.gupta.{timestamp}@testschool.edu.in"
             },
             token=self.gov_token
         )
