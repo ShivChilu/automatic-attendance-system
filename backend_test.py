@@ -467,25 +467,48 @@ class AttendanceAPITester:
         return success  # Success means we got conflict error as expected
 
 def main():
-    print("🚀 Starting Automated Attendance System API Tests")
-    print("=" * 60)
+    print("🚀 Starting Comprehensive Automated Attendance System API Tests")
+    print("=" * 70)
     
     tester = AttendanceAPITester()
     
-    # Test sequence
+    # Test sequence - organized by functionality
     tests = [
-        ("Health Check", tester.test_health_check),
+        # Basic Health and Authentication Tests
+        ("API Health Check", tester.test_health_check),
         ("GOV_ADMIN Login", tester.test_gov_admin_login),
-        ("SCHOOL_ADMIN Login", tester.test_school_admin_login),
         ("Auth Me (GOV_ADMIN)", tester.test_auth_me_gov),
-        ("Auth Me (SCHOOL_ADMIN)", tester.test_auth_me_school),
-        ("Create School", tester.test_create_school),
+        
+        # School Management Tests
+        ("Create School (Basic)", tester.test_create_school),
+        ("Create School (Comprehensive)", tester.test_create_school_comprehensive),
         ("List Schools", tester.test_list_schools),
+        ("Update School", tester.test_update_school),
+        
+        # Section Management Tests  
         ("Create Section", tester.test_create_section),
         ("List Sections", tester.test_list_sections),
+        ("Update Section", tester.test_update_section),
+        
+        # Student Management Tests
         ("Create Student", tester.test_create_student),
-        ("List Students", tester.test_list_students),
+        ("Update Student", tester.test_update_student),
+        
+        # User Management Tests
         ("Create Teacher", tester.test_create_teacher),
+        ("Create Co-Admin", tester.test_create_coadmin),
+        ("List Teachers", tester.test_list_teachers),
+        ("List Co-Admins", tester.test_list_coadmins),
+        ("Update User", tester.test_update_user),
+        
+        # Email Integration Tests
+        ("Resend Credentials", tester.test_resend_credentials),
+        
+        # Security and Error Handling Tests
+        ("Unauthorized Access Test", tester.test_unauthorized_access),
+        ("Role-based Access Control", tester.test_role_based_access_control),
+        ("Error Handling - Invalid Data", tester.test_error_handling_invalid_data),
+        ("Duplicate Email Handling", tester.test_duplicate_email_handling),
     ]
     
     failed_tests = []
@@ -499,9 +522,9 @@ def main():
             failed_tests.append(test_name)
     
     # Print summary
-    print("\n" + "=" * 60)
-    print("📊 TEST SUMMARY")
-    print("=" * 60)
+    print("\n" + "=" * 70)
+    print("📊 COMPREHENSIVE TEST SUMMARY")
+    print("=" * 70)
     print(f"Total tests: {tester.tests_run}")
     print(f"Passed: {tester.tests_passed}")
     print(f"Failed: {len(failed_tests)}")
@@ -510,9 +533,12 @@ def main():
         print(f"\n❌ Failed tests:")
         for test in failed_tests:
             print(f"   - {test}")
+        print(f"\n🔍 Check backend logs for detailed error information:")
+        print(f"   sudo tail -n 50 /var/log/supervisor/backend.*.log")
         return 1
     else:
         print(f"\n✅ All tests passed!")
+        print(f"🎉 Backend APIs are working correctly!")
         return 0
 
 if __name__ == "__main__":
