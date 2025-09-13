@@ -469,6 +469,10 @@ class AttendanceAPITester:
 
     def test_duplicate_email_handling(self):
         """Test handling of duplicate email addresses"""
+        if not self.created_school_id:
+            print("❌ Skipping duplicate email test - no school available")
+            return False
+            
         success, response = self.run_test(
             "Duplicate Email Handling",
             "POST",
@@ -478,7 +482,8 @@ class AttendanceAPITester:
                 "full_name": "Another Teacher",
                 "email": "rajesh.sharma@testschool.edu.in",  # Same email as before
                 "role": "TEACHER",
-                "phone": "9876543214"
+                "phone": "9876543214",
+                "school_id": self.created_school_id
             },
             token=self.gov_token
         )
