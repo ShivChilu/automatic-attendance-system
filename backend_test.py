@@ -154,9 +154,9 @@ class AttendanceAPITester:
         return success and isinstance(response, list)
 
     def test_create_section(self):
-        """Test creating a section as SCHOOL_ADMIN"""
-        if not self.school_id:
-            print("❌ Skipping section creation - no school_id available")
+        """Test creating a section as GOV_ADMIN"""
+        if not self.created_school_id:
+            print("❌ Skipping section creation - no created school available")
             return False
             
         success, response = self.run_test(
@@ -164,8 +164,8 @@ class AttendanceAPITester:
             "POST",
             "/sections",
             200,
-            data={"school_id": self.school_id, "name": "Test Section A1", "grade": "8"},
-            token=self.school_token
+            data={"school_id": self.created_school_id, "name": "Test Section A1", "grade": "8"},
+            token=self.gov_token
         )
         if success and 'id' in response:
             self.section_id = response['id']
