@@ -168,11 +168,14 @@ backend:
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: true
           agent: "main"
           comment: "Brevo API integration for sending credentials to new users"
+        - working: true
+          agent: "testing"
+          comment: "Email integration working perfectly. Brevo API successfully sending credential emails. Resend credentials endpoint tested and working - emails sent successfully with proper message IDs returned. Email validation and error handling working correctly."
 
 frontend:
   - task: "Environment Configuration"
