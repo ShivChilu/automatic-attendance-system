@@ -432,25 +432,28 @@ class AttendanceAPITester:
 
     def test_create_school_comprehensive(self):
         """Test creating a school with comprehensive data"""
+        import time
+        timestamp = str(int(time.time()) + 1)
+        
         success, response = self.run_test(
             "Create School (Comprehensive)",
             "POST",
             "/schools",
             200,
             data={
-                "name": "Comprehensive Test School",
+                "name": f"Comprehensive Test School {timestamp}",
                 "address_line1": "123 Education Street",
                 "city": "Bangalore",
                 "state": "Karnataka",
                 "pincode": "560001",
-                "principal_name": "Dr. Sunita Mehta",
-                "principal_email": "sunita.mehta@testschool.edu.in",
+                "principal_name": f"Dr. Sunita Mehta {timestamp}",
+                "principal_email": f"sunita.mehta.{timestamp}@testschool.edu.in",
                 "principal_phone": "9876543213"
             },
             token=self.gov_token
         )
         if success and 'id' in response:
-            self.created_school_id = response['id']
+            self.created_school_id = response['id']  # Update with latest school
             return True
         return False
 
