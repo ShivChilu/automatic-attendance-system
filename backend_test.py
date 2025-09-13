@@ -76,7 +76,7 @@ class AttendanceAPITester:
             "POST",
             "/auth/login",
             200,
-            data={"email": "chiluverushivaprasad01@gmail.com", "password": "TempPass123"}
+            data={"email": "chiluverushivaprasad01@gmail.com", "password": "NewTemp123"}
         )
         if success and 'access_token' in response:
             self.gov_token = response['access_token']
