@@ -4,15 +4,20 @@ from datetime import datetime
 import json
 
 class AttendanceAPITester:
-    def __init__(self, base_url="https://smart-attendance-26.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://smarttrack-5.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.gov_token = None
         self.school_token = None
+        self.teacher_token = None
+        self.coadmin_token = None
         self.tests_run = 0
         self.tests_passed = 0
         self.school_id = None
         self.section_id = None
         self.student_id = None
+        self.teacher_id = None
+        self.coadmin_id = None
+        self.created_school_id = None
 
     def run_test(self, name, method, endpoint, expected_status, data=None, token=None):
         """Run a single API test"""
