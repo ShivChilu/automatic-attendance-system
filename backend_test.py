@@ -380,13 +380,14 @@ class AttendanceAPITester:
 
     def test_resend_credentials(self):
         """Test resending user credentials"""
+        # Use the government admin email which we know exists
         success, response = self.run_test(
             "Resend Credentials",
             "POST",
             "/users/resend-credentials",
             200,
             data={
-                "email": "rajesh.sharma@testschool.edu.in",
+                "email": "chiluverushivaprasad01@gmail.com",
                 "temp_password": "NewTemp123"
             },
             token=self.gov_token
