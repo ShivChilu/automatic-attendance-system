@@ -179,7 +179,7 @@ class AttendanceAPITester:
             "GET",
             "/sections",
             200,
-            token=self.school_token
+            token=self.gov_token
         )
         return success and isinstance(response, list)
 
