@@ -472,9 +472,14 @@ class AttendanceAPITester:
 
     def test_duplicate_email_handling(self):
         """Test handling of duplicate email addresses"""
-        if not self.created_school_id:
-            print("❌ Skipping duplicate email test - no school available")
+        if not self.created_school_id or not self.teacher_id:
+            print("❌ Skipping duplicate email test - no school or teacher available")
             return False
+        
+        # Get the teacher's email from the created teacher
+        import time
+        teacher_timestamp = str(int(time.time()) - 2)  # Use the timestamp from teacher creation
+        teacher_email = f"rajesh.sharma.{teacher_timestamp}@testschool.edu.in"
             
         success, response = self.run_test(
             "Duplicate Email Handling",
@@ -483,7 +488,7 @@ class AttendanceAPITester:
             409,  # Conflict error
             data={
                 "full_name": "Another Teacher",
-                "email": "rajesh.sharma@testschool.edu.in",  # Same email as before
+                "email": teacher_email,  # Same email as the created teacher
                 "role": "TEACHER",
                 "phone": "9876543214",
                 "school_id": self.created_school_id
