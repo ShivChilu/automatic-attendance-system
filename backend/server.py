@@ -437,8 +437,7 @@ async def create_teacher(payload: UserCreate, current: dict = Depends(require_ro
 
     email_result = await brevo_send_credentials(payload.email, payload.full_name, 'Teacher', payload.email, temp_pass)
     if not email_result.get("success"):
-        logger.warning(f"Brevo send failed: {email_result.get('error')}
-")
+        logger.warning(f"Brevo send failed: {email_result.get('error')}")
 
     return UserPublic(
         id=user_doc["id"], full_name=user_doc["full_name"], email=user_doc["email"], role='TEACHER',
