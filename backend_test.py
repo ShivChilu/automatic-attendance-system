@@ -220,6 +220,10 @@ class AttendanceAPITester:
 
     def test_create_teacher(self):
         """Test creating a teacher"""
+        if not self.created_school_id:
+            print("❌ Skipping teacher creation - no school available")
+            return False
+            
         success, response = self.run_test(
             "Create Teacher",
             "POST",
@@ -230,7 +234,8 @@ class AttendanceAPITester:
                 "email": "rajesh.sharma@testschool.edu.in",
                 "role": "TEACHER",
                 "phone": "9876543211",
-                "subject": "Math"
+                "subject": "Math",
+                "school_id": self.created_school_id
             },
             token=self.gov_token
         )
@@ -241,6 +246,10 @@ class AttendanceAPITester:
 
     def test_create_coadmin(self):
         """Test creating a co-admin"""
+        if not self.created_school_id:
+            print("❌ Skipping co-admin creation - no school available")
+            return False
+            
         success, response = self.run_test(
             "Create Co-Admin",
             "POST",
@@ -250,7 +259,8 @@ class AttendanceAPITester:
                 "full_name": "Priya Reddy",
                 "email": "priya.reddy@testschool.edu.in",
                 "role": "CO_ADMIN",
-                "phone": "9876543212"
+                "phone": "9876543212",
+                "school_id": self.created_school_id
             },
             token=self.gov_token
         )
