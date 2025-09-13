@@ -63,7 +63,7 @@ class StatusCheck(BaseModel):
 class StatusCheckCreate(BaseModel):
     client_name: str
 
-Role = Literal['GOV_ADMIN', 'SCHOOL_ADMIN', 'TEACHER']
+Role = Literal['GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER']
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -78,6 +78,8 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: Optional[str] = None  # optional, will auto-generate if not provided
+    subject: Optional[str] = None   # for teachers
+    section_id: Optional[str] = None  # for teachers
 
 class UserPublic(BaseModel):
     id: str
@@ -86,6 +88,8 @@ class UserPublic(BaseModel):
     role: Role
     phone: Optional[str] = None
     school_id: Optional[str] = None
+    subject: Optional[str] = None
+    section_id: Optional[str] = None
     created_at: datetime
 
 class LoginRequest(BaseModel):
@@ -94,10 +98,24 @@ class LoginRequest(BaseModel):
 
 class SchoolCreate(BaseModel):
     name: str
+    address_line1: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    principal_name: str
+    principal_email: EmailStr
+    principal_phone: Optional[str] = None
 
 class School(BaseModel):
     id: str
     name: str
+    address_line1: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    principal_name: Optional[str] = None
+    principal_email: Optional[EmailStr] = None
+    principal_phone: Optional[str] = None
     created_at: datetime
 
 class SectionCreate(BaseModel):
@@ -114,7 +132,8 @@ class Section(BaseModel):
 
 class StudentCreate(BaseModel):
     name: str
-    student_code: str
+    student_code: Optional[str] = None
+    roll_no: Optional[str] = None
     section_id: str
     parent_mobile: Optional[str] = None
     has_twin: bool = False
@@ -124,6 +143,7 @@ class Student(BaseModel):
     id: str
     name: str
     student_code: str
+    roll_no: Optional[str] = None
     section_id: str
     parent_mobile: Optional[str] = None
     has_twin: bool
@@ -155,7 +175,6 @@ async def brevo_send_credentials(to_email: str, to_name: str, role: str, email: 
     Send a simple credentials email via Brevo API. This uses REST to minimize deps.
     Returns a dict with success flag.
     """
-    # Basic format check: API keys for Brevo v3 usually start with xkeysib-
     if not BREVO_API_KEY:
         return {"success": False, "error": "BREVO_API_KEY missing"}
     if not BREVO_SENDER_EMAIL:
@@ -238,7 +257,7 @@ async def login(data: LoginRequest):
     user = await get_user_by_email(data.email)
     if not user or not verify_password(data.password, user.get("password_hash", "")):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    token = create_access_token({"sub": user["id"], "role": user["role"], "school_id": user.get("school_id")})
+    token = create_access_token({"sub": user["id"], "role": user["role"], "school_id": user.get("school_id"), "section_id": user.get("section_id")})
     return TokenResponse(access_token=token)
 
 @api.get("/auth/me", response_model=UserPublic)
@@ -250,6 +269,8 @@ async def me(current_user: dict = Depends(get_current_user)):
         role=current_user["role"],
         phone=current_user.get("phone"),
         school_id=current_user.get("school_id"),
+        subject=current_user.get("subject"),
+        section_id=current_user.get("section_id"),
         created_at=current_user["created_at"],
     )
 
@@ -257,20 +278,62 @@ async def me(current_user: dict = Depends(get_current_user)):
 @api.post("/schools", response_model=School)
 async def create_school(payload: SchoolCreate, _: dict = Depends(require_roles('GOV_ADMIN'))):
     school_id = str(uuid.uuid4())
-    doc = {"id": school_id, "name": payload.name, "created_at": now_iso()}
-    await db.schools.insert_one(doc)
-    return School(**doc)
+    school_doc = {
+        "id": school_id,
+        "name": payload.name,
+        "address_line1": payload.address_line1,
+        "city": payload.city,
+        "state": payload.state,
+        "pincode": payload.pincode,
+        "principal_name": payload.principal_name,
+        "principal_email": payload.principal_email.lower(),
+        "principal_phone": payload.principal_phone,
+        "created_at": now_iso(),
+    }
+    # Create principal as SCHOOL_ADMIN with temp password
+    temp_pass = secrets.token_urlsafe(8)
+    principal_doc = {
+        "id": str(uuid.uuid4()),
+        "full_name": payload.principal_name,
+        "email": payload.principal_email.lower(),
+        "role": 'SCHOOL_ADMIN',
+        "phone": payload.principal_phone,
+        "school_id": school_id,
+        "password_hash": hash_password(temp_pass),
+        "created_at": now_iso(),
+    }
+
+    # Ensure email uniqueness
+    existing = await db.users.find_one({"email": principal_doc["email"]})
+    if existing:
+        raise HTTPException(status_code=409, detail="Principal email already exists as a user")
+
+    await db.schools.insert_one(school_doc)
+    await db.users.insert_one(principal_doc)
+
+    _ = await brevo_send_credentials(principal_doc['email'], principal_doc['full_name'], 'School Admin', principal_doc['email'], temp_pass)
+
+    return School(**school_doc)
 
 @api.get("/schools", response_model=List[School])
-async def list_schools(_: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN'))):
+async def list_schools(_: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN'))):
     items = await db.schools.find().to_list(1000)
     return [School(**i) for i in items]
 
+@api.get("/schools/my", response_model=School)
+async def my_school(current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER'))):
+    sid = current.get("school_id")
+    if not sid:
+        raise HTTPException(status_code=404, detail="No school associated")
+    doc = await db.schools.find_one({"id": sid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="School not found")
+    return School(**doc)
+
 # Sections
 @api.post("/sections", response_model=Section)
-async def create_section(payload: SectionCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
-    # If school admin, enforce their school_id
-    if current["role"] == 'SCHOOL_ADMIN' and payload.school_id != current.get("school_id"):
+async def create_section(payload: SectionCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN'))):
+    if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN') and payload.school_id != current.get("school_id"):
         raise HTTPException(status_code=403, detail="Cannot create section for another school")
     sec_id = str(uuid.uuid4())
     doc = {"id": sec_id, "school_id": payload.school_id, "name": payload.name, "grade": payload.grade, "created_at": now_iso()}
@@ -278,29 +341,33 @@ async def create_section(payload: SectionCreate, current: dict = Depends(require
     return Section(**doc)
 
 @api.get("/sections", response_model=List[Section])
-async def list_sections(school_id: Optional[str] = None, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN', 'TEACHER'))):
+async def list_sections(school_id: Optional[str] = None, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN', 'TEACHER'))):
     query: Dict[str, Any] = {}
     if school_id:
         query["school_id"] = school_id
-    elif current["role"] == 'SCHOOL_ADMIN':
+    elif current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN'):
+        query["school_id"] = current.get("school_id")
+    elif current["role"] == 'TEACHER' and current.get("school_id"):
         query["school_id"] = current.get("school_id")
     items = await db.sections.find(query).to_list(1000)
     return [Section(**i) for i in items]
 
 # Students
 @api.post("/students", response_model=Student)
-async def create_student(payload: StudentCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
-    # Validate section belongs to current school if school admin
+async def create_student(payload: StudentCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN'))):
+    # Validate section belongs to current school if school admin/co-admin
     sec = await db.sections.find_one({"id": payload.section_id})
     if not sec:
         raise HTTPException(status_code=404, detail="Section not found")
-    if current["role"] == 'SCHOOL_ADMIN' and sec.get("school_id") != current.get("school_id"):
+    if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN') and sec.get("school_id") != current.get("school_id"):
         raise HTTPException(status_code=403, detail="Cannot add student to another school's section")
     sid = str(uuid.uuid4())
+    student_code = payload.student_code or payload.roll_no or sid[:8]
     doc = {
         "id": sid,
         "name": payload.name,
-        "student_code": payload.student_code,
+        "student_code": student_code,
+        "roll_no": payload.roll_no or payload.student_code,
         "section_id": payload.section_id,
         "parent_mobile": payload.parent_mobile,
         "has_twin": payload.has_twin,
@@ -311,33 +378,45 @@ async def create_student(payload: StudentCreate, current: dict = Depends(require
     return Student(**doc)
 
 @api.get("/students", response_model=List[Student])
-async def list_students(section_id: Optional[str] = None, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN', 'TEACHER'))):
+async def list_students(section_id: Optional[str] = None, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN', 'TEACHER'))):
     query: Dict[str, Any] = {}
     if section_id:
         query["section_id"] = section_id
-    # School scoping for school admin: find sections of their school
-    if current["role"] == 'SCHOOL_ADMIN':
+    if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN'):
         school_sections = [s["id"] for s in await db.sections.find({"school_id": current.get("school_id")}).to_list(1000)]
         if section_id and section_id not in school_sections:
             raise HTTPException(status_code=403, detail="Not allowed")
         if not section_id:
             query["section_id"] = {"$in": school_sections}
+    if current["role"] == 'TEACHER' and current.get("section_id"):
+        query["section_id"] = current.get("section_id")
     items = await db.students.find(query).to_list(1000)
     return [Student(**i) for i in items]
 
-# Users (Teachers & Admins)
+# Users (Teachers, Co-Admins)
+ALLOWED_SUBJECTS = ["Math", "Science", "English", "Social", "Telugu", "Hindi", "Other"]
+
 @api.post("/users/teachers", response_model=UserPublic)
-async def create_teacher(payload: UserCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
+async def create_teacher(payload: UserCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN'))):
     if payload.role != 'TEACHER':
         raise HTTPException(status_code=400, detail="role must be TEACHER for this endpoint")
-    # Scope school assignment
+    # Scope
     school_id = payload.school_id or current.get("school_id")
-    if current["role"] == 'SCHOOL_ADMIN':
+    if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN'):
         school_id = current.get("school_id")
     if not school_id:
         raise HTTPException(status_code=400, detail="school_id required")
 
-    # Generate password if not provided
+    # Validate subject
+    if payload.subject and payload.subject not in ALLOWED_SUBJECTS:
+        raise HTTPException(status_code=400, detail="Invalid subject")
+
+    # Validate section if provided
+    if payload.section_id:
+        sec = await db.sections.find_one({"id": payload.section_id})
+        if not sec or sec.get("school_id") != school_id:
+            raise HTTPException(status_code=400, detail="Invalid section for this school")
+
     temp_pass = payload.password or secrets.token_urlsafe(8)
     user_doc = {
         "id": str(uuid.uuid4()),
@@ -346,24 +425,76 @@ async def create_teacher(payload: UserCreate, current: dict = Depends(require_ro
         "role": 'TEACHER',
         "phone": payload.phone,
         "school_id": school_id,
+        "subject": payload.subject,
+        "section_id": payload.section_id,
         "password_hash": hash_password(temp_pass),
         "created_at": now_iso(),
     }
-    # Unique email
     existing = await db.users.find_one({"email": user_doc["email"]})
     if existing:
         raise HTTPException(status_code=409, detail="Email already exists")
     await db.users.insert_one(user_doc)
 
-    # Send email (best-effort)
     email_result = await brevo_send_credentials(payload.email, payload.full_name, 'Teacher', payload.email, temp_pass)
+    if not email_result.get("success"):
+        logger.warning(f"Brevo send failed: {email_result.get('error')}
+")
+
+    return UserPublic(
+        id=user_doc["id"], full_name=user_doc["full_name"], email=user_doc["email"], role='TEACHER',
+        phone=user_doc.get("phone"), school_id=school_id, subject=user_doc.get("subject"), section_id=user_doc.get("section_id"), created_at=user_doc["created_at"]
+    )
+
+@api.post("/users/coadmins", response_model=UserPublic)
+async def create_coadmin(payload: UserCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN'))):
+    if payload.role != 'CO_ADMIN':
+        raise HTTPException(status_code=400, detail="role must be CO_ADMIN for this endpoint")
+    school_id = payload.school_id or current.get("school_id")
+    if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN'):
+        school_id = current.get("school_id")
+    if not school_id:
+        raise HTTPException(status_code=400, detail="school_id required")
+
+    temp_pass = payload.password or secrets.token_urlsafe(8)
+    user_doc = {
+        "id": str(uuid.uuid4()),
+        "full_name": payload.full_name,
+        "email": payload.email.lower(),
+        "role": 'CO_ADMIN',
+        "phone": payload.phone,
+        "school_id": school_id,
+        "password_hash": hash_password(temp_pass),
+        "created_at": now_iso(),
+    }
+    existing = await db.users.find_one({"email": user_doc["email"]})
+    if existing:
+        raise HTTPException(status_code=409, detail="Email already exists")
+    await db.users.insert_one(user_doc)
+
+    email_result = await brevo_send_credentials(payload.email, payload.full_name, 'Co-Admin', payload.email, temp_pass)
     if not email_result.get("success"):
         logger.warning(f"Brevo send failed: {email_result.get('error')}")
 
     return UserPublic(
-        id=user_doc["id"], full_name=user_doc["full_name"], email=user_doc["email"], role='TEACHER',
+        id=user_doc["id"], full_name=user_doc["full_name"], email=user_doc["email"], role='CO_ADMIN',
         phone=user_doc.get("phone"), school_id=school_id, created_at=user_doc["created_at"]
     )
+
+# List users by role (scoped)
+class UsersListResponse(BaseModel):
+    users: List[UserPublic]
+
+@api.get("/users", response_model=UsersListResponse)
+async def list_users(role: Role, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN'))):
+    query: Dict[str, Any] = {"role": role}
+    if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN'):
+        query["school_id"] = current.get("school_id")
+    items = await db.users.find(query).to_list(1000)
+    return {"users": [UserPublic(
+        id=u["id"], full_name=u["full_name"], email=u["email"], role=u["role"], phone=u.get("phone"),
+        school_id=u.get("school_id"), subject=u.get("subject"), section_id=u.get("section_id"), created_at=u["created_at"]
+    ) for u in items]}
+
 # Resend credentials (GOV_ADMIN only)
 class ResendReq(BaseModel):
     email: EmailStr
@@ -374,13 +505,11 @@ async def resend_credentials(payload: ResendReq, _: dict = Depends(require_roles
     user = await db.users.find_one({"email": payload.email.lower()})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    # Generate or use provided temp password
     temp = payload.temp_password or secrets.token_urlsafe(8)
     await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_password(temp)}})
-    role_human = 'Teacher' if user['role']=='TEACHER' else ('School Admin' if user['role']=='SCHOOL_ADMIN' else 'Government Admin')
+    role_human = 'Teacher' if user['role']=='TEACHER' else ('School Admin' if user['role']=='SCHOOL_ADMIN' else 'Co-Admin' if user['role']=='CO_ADMIN' else 'Government Admin')
     send_res = await brevo_send_credentials(user['email'], user['full_name'], role_human, user['email'], temp)
     return {"sent": bool(send_res.get('success')), "email": user['email'], "role": user['role'], "brevo": send_res}
-
 
 # ---------- Startup tasks: indexes + seeding ----------
 @app.on_event("startup")
@@ -415,23 +544,8 @@ async def on_startup():
                 "created_at": now_iso(),
             }
             await db.users.insert_one(gov_doc)
-            # Send email best-effort
             _ = await brevo_send_credentials(gov_email, gov_name, 'Government Admin', gov_email, temp)
             logger.info("Seeded Government Admin user")
-
-        # If GOV_ADMIN exists and password provided, update password
-        if gov_email and gov_pass:
-            existing_gov = await db.users.find_one({"email": gov_email.lower()})
-            if existing_gov and existing_gov.get("role") == 'GOV_ADMIN':
-                await db.users.update_one({"id": existing_gov["id"]}, {"$set": {"password_hash": hash_password(gov_pass)}})
-                logger.info("Updated Government Admin password from seed env")
-
-        # If SCHOOL_ADMIN exists and password provided, update password
-        if school_admin_email and school_admin_pass:
-            existing_sa = await db.users.find_one({"email": school_admin_email.lower()})
-            if existing_sa and existing_sa.get("role") == 'SCHOOL_ADMIN':
-                await db.users.update_one({"id": existing_sa["id"]}, {"$set": {"password_hash": hash_password(school_admin_pass)}})
-                logger.info("Updated School Admin password from seed env")
 
         # Seed School and School Admin
         school_id = None
@@ -459,6 +573,19 @@ async def on_startup():
             await db.users.insert_one(sa_doc)
             _ = await brevo_send_credentials(school_admin_email, school_admin_name, 'School Admin', school_admin_email, temp2)
             logger.info("Seeded School Admin user")
+
+        # If GOV_ADMIN exists and password provided, update
+        if gov_email and gov_pass:
+            existing_gov = await db.users.find_one({"email": gov_email.lower()})
+            if existing_gov and existing_gov.get("role") == 'GOV_ADMIN':
+                await db.users.update_one({"id": existing_gov["id"]}, {"$set": {"password_hash": hash_password(gov_pass)}})
+                logger.info("Updated Government Admin password from seed env")
+
+        if school_admin_email and school_admin_pass:
+            existing_sa = await db.users.find_one({"email": school_admin_email.lower()})
+            if existing_sa and existing_sa.get("role") == 'SCHOOL_ADMIN':
+                await db.users.update_one({"id": existing_sa["id"]}, {"$set": {"password_hash": hash_password(school_admin_pass)}})
+                logger.info("Updated School Admin password from seed env")
 
     except Exception as e:
         logger.error(f"Startup seeding failed: {e}")
