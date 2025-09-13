@@ -125,14 +125,22 @@ class AttendanceAPITester:
     def test_create_school(self):
         """Test creating a school as GOV_ADMIN"""
         success, response = self.run_test(
-            "Create School",
+            "Create School (Basic)",
             "POST",
             "/schools",
             200,
-            data={"name": "Integration Test School"},
+            data={
+                "name": "Basic Test School",
+                "principal_name": "Mr. Ramesh Gupta", 
+                "principal_email": "ramesh.gupta@testschool.edu.in"
+            },
             token=self.gov_token
         )
-        return success and 'id' in response
+        if success and 'id' in response:
+            if not self.created_school_id:  # Store first created school ID
+                self.created_school_id = response['id']
+            return True
+        return False
 
     def test_list_schools(self):
         """Test listing schools"""
