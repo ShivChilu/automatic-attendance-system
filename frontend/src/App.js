@@ -87,6 +87,8 @@ function GovAdmin({ me }) {
   const [form, setForm] = useState({ name: "", address_line1: "", city: "", state: "", pincode: "", principal_name: "", principal_email: "", principal_phone: "" });
   const [message, setMessage] = useState("");
   const [schools, setSchools] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [editDraft, setEditDraft] = useState({});
 
   const loadSchools = async () => {
     const res = await api.get("/schools");
@@ -108,10 +110,20 @@ function GovAdmin({ me }) {
   };
 
   const resend = async (email) => {
-    try {
-      await api.post("/users/resend-credentials", { email });
-      alert("Credentials resent");
-    } catch (e) { alert("Failed to resend"); }
+    try { await api.post("/users/resend-credentials", { email }); alert("Credentials resent"); } catch (e) { alert("Failed to resend"); }
+  };
+
+  const startEdit = (s) => { setEditingId(s.id); setEditDraft({ ...s }); };
+  const cancelEdit = () => { setEditingId(null); setEditDraft({}); };
+  const saveEdit = async () => {
+    const payload = { ...editDraft };
+    delete payload.id; delete payload.created_at;
+    await api.put(`/schools/${editingId}`, payload);
+    setEditingId(null); setEditDraft({}); loadSchools();
+  };
+  const removeSchool = async (id) => {
+    if (!confirm("Are you sure you want to delete this school? All its sections, students, and users will be removed.")) return;
+    await api.delete(`/schools/${id}`); loadSchools();
   };
 
   return (
@@ -144,11 +156,24 @@ function GovAdmin({ me }) {
             <tbody>
               {schools.map((s) => (
                 <tr key={s.id}>
-                  <td>{s.name}</td>
-                  <td>{s.city || '-'}</td>
-                  <td>{s.principal_name || '-'}</td>
-                  <td>{s.principal_email || '-'}</td>
-                  <td><Button className="btn_secondary" onClick={() => resend(s.principal_email)} disabled={!s.principal_email}>Resend Credentials</Button></td>
+                  <td>{editingId === s.id ? <Input value={editDraft.name} onChange={(e)=>setEditDraft({...editDraft, name: e.target.value})} /> : s.name}</td>
+                  <td>{editingId === s.id ? <Input value={editDraft.city || ''} onChange={(e)=>setEditDraft({...editDraft, city: e.target.value})} /> : (s.city || '-')}</td>
+                  <td>{editingId === s.id ? <Input value={editDraft.principal_name || ''} onChange={(e)=>setEditDraft({...editDraft, principal_name: e.target.value})} /> : (s.principal_name || '-')}</td>
+                  <td>{editingId === s.id ? <Input value={editDraft.principal_email || ''} onChange={(e)=>setEditDraft({...editDraft, principal_email: e.target.value})} /> : (s.principal_email || '-')}</td>
+                  <td style={{display:'flex',gap:8}}>
+                    <Button className="btn_secondary" onClick={() => resend(s.principal_email)} disabled={!s.principal_email}>Resend</Button>
+                    {editingId === s.id ? (
+                      <>
+                        <Button className="btn_primary" onClick={saveEdit}>Save</Button>
+                        <Button className="btn_secondary" onClick={cancelEdit}>Cancel</Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button className="btn_secondary" onClick={() => startEdit(s)}>Edit</Button>
+                        <Button className="btn_secondary" onClick={() => removeSchool(s.id)}>Delete</Button>
+                      </>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -168,6 +193,10 @@ function SchoolAdminLike({ me }) {
   const [secName, setSecName] = useState("");
   const [secGrade, setSecGrade] = useState("");
 
+  // Section manage edit
+  const [editingSection, setEditingSection] = useState(null);
+  const [sectionDraft, setSectionDraft] = useState({});
+
   // Student
   const [stuName, setStuName] = useState("");
   const [rollNo, setRollNo] = useState("");
@@ -182,11 +211,21 @@ function SchoolAdminLike({ me }) {
   const [subject, setSubject] = useState("Math");
   const [teacherSection, setTeacherSection] = useState("");
 
+  // Staff tables
+  const [teachers, setTeachers] = useState([]);
+  const [coadmins, setCoadmins] = useState([]);
+
   const loadSections = async () => {
     const sec = await api.get("/sections");
     setSections(sec.data);
   };
-  useEffect(() => { loadSections(); }, []);
+  const loadStaff = async () => {
+    const t = await api.get("/users", { params: { role: "TEACHER" } });
+    const c = await api.get("/users", { params: { role: "CO_ADMIN" } });
+    setTeachers(t.data.users || []);
+    setCoadmins(c.data.users || []);
+  };
+  useEffect(() => { loadSections(); loadStaff(); }, []);
 
   const addSection = async (e) => {
     e.preventDefault();
@@ -194,29 +233,49 @@ function SchoolAdminLike({ me }) {
     setSecName(""); setSecGrade(""); loadSections();
   };
 
+  const editSection = (s) => { setEditingSection(s.id); setSectionDraft({ name: s.name, grade: s.grade || '' }); };
+  const saveSection = async () => {
+    await api.put(`/sections/${editingSection}`, { ...sectionDraft, grade: sectionDraft.grade || undefined });
+    setEditingSection(null); setSectionDraft({}); loadSections();
+  };
+  const deleteSection = async (id) => {
+    if (!confirm("Delete this section? All students in it will be removed.")) return;
+    await api.delete(`/sections/${id}`); if (selectedSec === id) setSelectedSec(""); loadSections(); setStudents([]);
+  };
+
   const addStudent = async (e) => {
     e.preventDefault();
     await api.post("/students", { name: stuName, roll_no: rollNo, section_id: selectedSec, parent_mobile: parentMobile || undefined });
     setStuName(""); setRollNo(""); setParentMobile("");
-    if (selectedSec) {
-      const list = await api.get(`/students?section_id=${selectedSec}`);
-      setStudents(list.data);
-    }
+    if (selectedSec) { const list = await api.get(`/students?section_id=${selectedSec}`); setStudents(list.data); }
+  };
+  const editStudent = async (st, updates) => {
+    await api.put(`/students/${st.id}`, updates);
+    if (selectedSec) { const list = await api.get(`/students?section_id=${selectedSec}`); setStudents(list.data); }
+  };
+  const deleteStudent = async (id) => {
+    if (!confirm("Delete this student?")) return;
+    await api.delete(`/students/${id}`);
+    if (selectedSec) { const list = await api.get(`/students?section_id=${selectedSec}`); setStudents(list.data); }
   };
 
   const createCredential = async (e) => {
     e.preventDefault();
-    if (roleType === 'TEACHER') {
-      await api.post("/users/teachers", { full_name: tName, email: tEmail, role: "TEACHER", phone: tPhone, subject, section_id: teacherSection });
-      alert("Teacher created. Credentials emailed.");
-    } else if (roleType === 'CO_ADMIN') {
-      await api.post("/users/coadmins", { full_name: tName, email: tEmail, role: "CO_ADMIN", phone: tPhone });
-      alert("Co-Admin created. Credentials emailed.");
-    } else {
-      // STUDENT is covered by Add Student form
-      alert("Use Add Student form for students.");
+    try {
+      if (roleType === 'TEACHER') {
+        await api.post("/users/teachers", { full_name: tName, email: tEmail, role: "TEACHER", phone: tPhone, subject, section_id: teacherSection || undefined });
+        alert("Teacher created. Credentials emailed.");
+      } else if (roleType === 'CO_ADMIN') {
+        await api.post("/users/coadmins", { full_name: tName, email: tEmail, role: "CO_ADMIN", phone: tPhone });
+        alert("Co-Admin created. Credentials emailed.");
+      } else {
+        alert("Use Add Student form for students.");
+      }
+      setTName(""); setTEmail(""); setTPhone(""); setSubject("Math"); setTeacherSection("");
+      loadStaff();
+    } catch (err) {
+      alert(err?.response?.data?.detail || "Failed to create credentials");
     }
-    setTName(""); setTEmail(""); setTPhone(""); setSubject("Math"); setTeacherSection("");
   };
 
   const loadStudents = async (secId) => {
@@ -225,6 +284,8 @@ function SchoolAdminLike({ me }) {
     const list = await api.get(`/students?section_id=${secId}`);
     setStudents(list.data);
   };
+
+  const isSchoolAdmin = me?.role === 'SCHOOL_ADMIN';
 
   return (
     <div className="dash_grid">
@@ -239,6 +300,38 @@ function SchoolAdminLike({ me }) {
           <div className="form_row"><Label>Grade</Label><Input value={secGrade} onChange={(e) => setSecGrade(e.target.value)} placeholder="e.g., 8" /></div>
           <Button className="btn_primary" type="submit">Add</Button>
         </form>
+
+        {/* Section list with edit/delete (hidden for CO_ADMIN) */}
+        {sections.length > 0 && (
+          <div className="table_wrap" style={{marginTop:12}}>
+            <table>
+              <thead><tr><th>Name</th><th>Grade</th>{isSchoolAdmin && <th>Actions</th>}</tr></thead>
+              <tbody>
+                {sections.map((s) => (
+                  <tr key={s.id}>
+                    <td>{editingSection === s.id ? <Input value={sectionDraft.name} onChange={(e)=>setSectionDraft({...sectionDraft, name:e.target.value})}/> : s.name}</td>
+                    <td>{editingSection === s.id ? <Input value={sectionDraft.grade || ''} onChange={(e)=>setSectionDraft({...sectionDraft, grade:e.target.value})}/> : (s.grade || '-')}</td>
+                    {isSchoolAdmin && (
+                      <td style={{display:'flex',gap:8}}>
+                        {editingSection === s.id ? (
+                          <>
+                            <Button className="btn_primary" onClick={saveSection}>Save</Button>
+                            <Button className="btn_secondary" onClick={()=>{setEditingSection(null); setSectionDraft({});}}>Cancel</Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button className="btn_secondary" onClick={()=>editSection(s)}>Edit</Button>
+                            <Button className="btn_secondary" onClick={()=>deleteSection(s.id)}>Delete</Button>
+                          </>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
 
       <Card className="card">
@@ -305,15 +398,86 @@ function SchoolAdminLike({ me }) {
         {selectedSec ? (
           <div className="table_wrap">
             <table>
-              <thead><tr><th>Name</th><th>Roll</th><th>Code</th><th>Parent</th></tr></thead>
+              <thead><tr><th>Name</th><th>Roll</th><th>Code</th><th>Parent</th>{isSchoolAdmin && <th>Actions</th>}</tr></thead>
               <tbody>
                 {students.map((st) => (
-                  <tr key={st.id}><td>{st.name}</td><td>{st.roll_no || '-'}</td><td>{st.student_code}</td><td>{st.parent_mobile || '-'}</td></tr>
+                  <tr key={st.id}>
+                    <td>{st.name}</td>
+                    <td>{st.roll_no || '-'}</td>
+                    <td>{st.student_code}</td>
+                    <td>{st.parent_mobile || '-'}</td>
+                    {isSchoolAdmin && (
+                      <td style={{display:'flex',gap:8}}>
+                        <Button className="btn_secondary" onClick={() => {
+                          const newName = prompt('Update name', st.name) || st.name;
+                          const newRoll = prompt('Update roll', st.roll_no || '') || st.roll_no;
+                          const newParent = prompt('Update parent mobile', st.parent_mobile || '') || st.parent_mobile;
+                          editStudent(st, { name: newName, roll_no: newRoll, parent_mobile: newParent });
+                        }}>Edit</Button>
+                        <Button className="btn_secondary" onClick={() => deleteStudent(st.id)}>Delete</Button>
+                      </td>
+                    )}
+                  </tr>
                 ))}
               </tbody>
             </table>
           </div>
         ) : <div className="muted">Select a section to view students</div>}
+      </Card>
+
+      <Card className="card wide">
+        <h3>Manage Staff</h3>
+        <div className="table_wrap" style={{marginBottom:12}}>
+          <table>
+            <thead><tr><th>Teacher</th><th>Email</th><th>Subject</th><th>Section</th>{isSchoolAdmin && <th>Actions</th>}</tr></thead>
+            <tbody>
+              {teachers.map((t) => (
+                <tr key={t.id}>
+                  <td>{t.full_name}</td>
+                  <td>{t.email}</td>
+                  <td>{t.subject || '-'}</td>
+                  <td>{(sections.find(s => s.id === t.section_id)?.name) || '-'}</td>
+                  {isSchoolAdmin && (
+                    <td style={{display:'flex',gap:8}}>
+                      <Button className="btn_secondary" onClick={async ()=>{
+                        const newName = prompt('Name', t.full_name) || t.full_name;
+                        const newPhone = prompt('Phone', t.phone || '') || t.phone;
+                        const newSubject = prompt('Subject (Math/Science/English/Social/Telugu/Hindi/Other)', t.subject || '');
+                        try { await api.put(`/users/${t.id}`, { full_name: newName, phone: newPhone, subject: newSubject || undefined }); loadStaff(); } catch(err){ alert(err?.response?.data?.detail || 'Update failed'); }
+                      }}>Edit</Button>
+                      <Button className="btn_secondary" onClick={async ()=>{ if(confirm('Delete this teacher?')) { await api.delete(`/users/${t.id}`); loadStaff(); } }}>Delete</Button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="table_wrap">
+          <table>
+            <thead><tr><th>Co-Admin</th><th>Email</th><th>Phone</th>{isSchoolAdmin && <th>Actions</th>}</tr></thead>
+            <tbody>
+              {coadmins.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.full_name}</td>
+                  <td>{c.email}</td>
+                  <td>{c.phone || '-'}</td>
+                  {isSchoolAdmin && (
+                    <td style={{display:'flex',gap:8}}>
+                      <Button className="btn_secondary" onClick={async ()=>{
+                        const newName = prompt('Name', c.full_name) || c.full_name;
+                        const newPhone = prompt('Phone', c.phone || '') || c.phone;
+                        try { await api.put(`/users/${c.id}`, { full_name: newName, phone: newPhone }); loadStaff(); } catch(err){ alert(err?.response?.data?.detail || 'Update failed'); }
+                      }}>Edit</Button>
+                      <Button className="btn_secondary" onClick={async ()=>{ if(confirm('Delete this co-admin?')) { await api.delete(`/users/${c.id}`); loadStaff(); } }}>Delete</Button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   );

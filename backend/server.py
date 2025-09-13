@@ -106,6 +106,16 @@ class SchoolCreate(BaseModel):
     principal_email: EmailStr
     principal_phone: Optional[str] = None
 
+class SchoolUpdate(BaseModel):
+    name: Optional[str] = None
+    address_line1: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    principal_name: Optional[str] = None
+    principal_email: Optional[EmailStr] = None
+    principal_phone: Optional[str] = None
+
 class School(BaseModel):
     id: str
     name: str
@@ -123,6 +133,10 @@ class SectionCreate(BaseModel):
     name: str
     grade: Optional[str] = None
 
+class SectionUpdate(BaseModel):
+    name: Optional[str] = None
+    grade: Optional[str] = None
+
 class Section(BaseModel):
     id: str
     school_id: str
@@ -138,6 +152,12 @@ class StudentCreate(BaseModel):
     parent_mobile: Optional[str] = None
     has_twin: bool = False
     twin_group_id: Optional[str] = None
+
+class StudentUpdate(BaseModel):
+    name: Optional[str] = None
+    student_code: Optional[str] = None
+    roll_no: Optional[str] = None
+    parent_mobile: Optional[str] = None
 
 class Student(BaseModel):
     id: str
@@ -315,6 +335,35 @@ async def create_school(payload: SchoolCreate, _: dict = Depends(require_roles('
 
     return School(**school_doc)
 
+@api.put("/schools/{school_id}", response_model=School)
+async def update_school(school_id: str, payload: SchoolUpdate, _: dict = Depends(require_roles('GOV_ADMIN'))):
+    upd = {k: v for k, v in payload.model_dump(exclude_none=True).items()}
+    if not upd:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    # if principal_email changes, ensure no user conflict
+    if 'principal_email' in upd:
+        upd['principal_email'] = upd['principal_email'].lower()
+    res = await db.schools.find_one_and_update({"id": school_id}, {"$set": upd}, return_document=True)
+    doc = await db.schools.find_one({"id": school_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="School not found")
+    return School(**doc)
+
+@api.delete("/schools/{school_id}")
+async def delete_school(school_id: str, _: dict = Depends(require_roles('GOV_ADMIN'))):
+    school = await db.schools.find_one({"id": school_id})
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+    # cascade: sections, students, users in this school
+    sections = await db.sections.find({"school_id": school_id}).to_list(10000)
+    section_ids = [s['id'] for s in sections]
+    if section_ids:
+        await db.students.delete_many({"section_id": {"$in": section_ids}})
+        await db.sections.delete_many({"id": {"$in": section_ids}})
+    await db.users.delete_many({"school_id": school_id})
+    await db.schools.delete_one({"id": school_id})
+    return {"deleted": True}
+
 @api.get("/schools", response_model=List[School])
 async def list_schools(_: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN'))):
     items = await db.schools.find().to_list(1000)
@@ -339,6 +388,31 @@ async def create_section(payload: SectionCreate, current: dict = Depends(require
     doc = {"id": sec_id, "school_id": payload.school_id, "name": payload.name, "grade": payload.grade, "created_at": now_iso()}
     await db.sections.insert_one(doc)
     return Section(**doc)
+
+@api.put("/sections/{section_id}", response_model=Section)
+async def update_section(section_id: str, payload: SectionUpdate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
+    sec = await db.sections.find_one({"id": section_id})
+    if not sec:
+        raise HTTPException(status_code=404, detail="Section not found")
+    if current['role'] == 'SCHOOL_ADMIN' and sec.get('school_id') != current.get('school_id'):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    upd = {k: v for k, v in payload.model_dump(exclude_none=True).items()}
+    if not upd:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    await db.sections.update_one({"id": section_id}, {"$set": upd})
+    sec = await db.sections.find_one({"id": section_id})
+    return Section(**sec)
+
+@api.delete("/sections/{section_id}")
+async def delete_section(section_id: str, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
+    sec = await db.sections.find_one({"id": section_id})
+    if not sec:
+        raise HTTPException(status_code=404, detail="Section not found")
+    if current['role'] == 'SCHOOL_ADMIN' and sec.get('school_id') != current.get('school_id'):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    await db.students.delete_many({"section_id": section_id})
+    await db.sections.delete_one({"id": section_id})
+    return {"deleted": True}
 
 @api.get("/sections", response_model=List[Section])
 async def list_sections(school_id: Optional[str] = None, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN', 'TEACHER'))):
@@ -377,21 +451,31 @@ async def create_student(payload: StudentCreate, current: dict = Depends(require
     await db.students.insert_one(doc)
     return Student(**doc)
 
-@api.get("/students", response_model=List[Student])
-async def list_students(section_id: Optional[str] = None, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN', 'TEACHER'))):
-    query: Dict[str, Any] = {}
-    if section_id:
-        query["section_id"] = section_id
-    if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN'):
-        school_sections = [s["id"] for s in await db.sections.find({"school_id": current.get("school_id")}).to_list(1000)]
-        if section_id and section_id not in school_sections:
-            raise HTTPException(status_code=403, detail="Not allowed")
-        if not section_id:
-            query["section_id"] = {"$in": school_sections}
-    if current["role"] == 'TEACHER' and current.get("section_id"):
-        query["section_id"] = current.get("section_id")
-    items = await db.students.find(query).to_list(1000)
-    return [Student(**i) for i in items]
+@api.put("/students/{student_id}", response_model=Student)
+async def update_student(student_id: str, payload: StudentUpdate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
+    stu = await db.students.find_one({"id": student_id})
+    if not stu:
+        raise HTTPException(status_code=404, detail="Student not found")
+    sec = await db.sections.find_one({"id": stu['section_id']})
+    if current['role'] == 'SCHOOL_ADMIN' and sec and sec.get('school_id') != current.get('school_id'):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    upd = {k: v for k, v in payload.model_dump(exclude_none=True).items()}
+    if not upd:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    await db.students.update_one({"id": student_id}, {"$set": upd})
+    stu = await db.students.find_one({"id": student_id})
+    return Student(**stu)
+
+@api.delete("/students/{student_id}")
+async def delete_student(student_id: str, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
+    stu = await db.students.find_one({"id": student_id})
+    if not stu:
+        raise HTTPException(status_code=404, detail="Student not found")
+    sec = await db.sections.find_one({"id": stu['section_id']})
+    if current['role'] == 'SCHOOL_ADMIN' and sec and sec.get('school_id') != current.get('school_id'):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    await db.students.delete_one({"id": student_id})
+    return {"deleted": True}
 
 # Users (Teachers, Co-Admins)
 ALLOWED_SUBJECTS = ["Math", "Science", "English", "Social", "Telugu", "Hindi", "Other"]
@@ -493,6 +577,52 @@ async def list_users(role: Role, current: dict = Depends(require_roles('GOV_ADMI
         id=u["id"], full_name=u["full_name"], email=u["email"], role=u["role"], phone=u.get("phone"),
         school_id=u.get("school_id"), subject=u.get("subject"), section_id=u.get("section_id"), created_at=u["created_at"]
     ) for u in items]}
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    subject: Optional[str] = None
+    section_id: Optional[str] = None
+
+@api.put("/users/{user_id}", response_model=UserPublic)
+async def update_user(user_id: str, payload: UserUpdate, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN'))):
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if current['role'] == 'SCHOOL_ADMIN':
+        if user.get('school_id') != current.get('school_id'):
+            raise HTTPException(status_code=403, detail="Not allowed")
+        if user.get('role') == 'SCHOOL_ADMIN' and user.get('id') != current.get('id'):
+            # prevent school admin editing other school admins arbitrarily
+            pass
+    upd = {k: v for k, v in payload.model_dump(exclude_none=True).items()}
+    # validate teacher subject/section
+    if user.get('role') == 'TEACHER':
+        if 'subject' in upd and upd['subject'] not in ALLOWED_SUBJECTS:
+            raise HTTPException(status_code=400, detail="Invalid subject")
+        if 'section_id' in upd and upd['section_id']:
+            sec = await db.sections.find_one({"id": upd['section_id']})
+            if not sec or (current['role'] == 'SCHOOL_ADMIN' and sec.get('school_id') != current.get('school_id')):
+                raise HTTPException(status_code=400, detail="Invalid section for this school")
+    await db.users.update_one({"id": user_id}, {"$set": upd})
+    new_u = await db.users.find_one({"id": user_id})
+    return UserPublic(
+        id=new_u["id"], full_name=new_u["full_name"], email=new_u["email"], role=new_u["role"], phone=new_u.get("phone"),
+        school_id=new_u.get("school_id"), subject=new_u.get("subject"), section_id=new_u.get("section_id"), created_at=new_u["created_at"]
+    )
+
+@api.delete("/users/{user_id}")
+async def delete_user(user_id: str, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN'))):
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if current['role'] == 'SCHOOL_ADMIN':
+        if user.get('school_id') != current.get('school_id'):
+            raise HTTPException(status_code=403, detail="Not allowed")
+        if user.get('role') == 'SCHOOL_ADMIN':
+            raise HTTPException(status_code=403, detail="Cannot delete a School Admin")
+    await db.users.delete_one({"id": user_id})
+    return {"deleted": True}
 
 # Resend credentials (GOV_ADMIN only)
 class ResendReq(BaseModel):
