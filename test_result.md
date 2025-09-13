@@ -233,10 +233,7 @@ metadata:
   run_ui: true
 
 test_plan:
-  current_focus:
-    - "API Endpoints"
-    - "Authentication System"
-    - "Role-based Navigation"
+  current_focus: []
   stuck_tasks: []
   test_all: true
   test_priority: "high_first"
