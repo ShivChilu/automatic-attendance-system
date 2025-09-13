@@ -218,14 +218,253 @@ class AttendanceAPITester:
             "/users/teachers",
             200,
             data={
-                "full_name": "Test Teacher Mrs Sharma",
-                "email": "qa.teacher.test@example.com",
+                "full_name": "Rajesh Kumar Sharma",
+                "email": "rajesh.sharma@testschool.edu.in",
                 "role": "TEACHER",
-                "phone": "9876543211"
+                "phone": "9876543211",
+                "subject": "Math"
             },
-            token=self.school_token
+            token=self.gov_token
         )
-        return success and response.get('role') == 'TEACHER'
+        if success and response.get('role') == 'TEACHER':
+            self.teacher_id = response.get('id')
+            return True
+        return False
+
+    def test_create_coadmin(self):
+        """Test creating a co-admin"""
+        success, response = self.run_test(
+            "Create Co-Admin",
+            "POST",
+            "/users/coadmins",
+            200,
+            data={
+                "full_name": "Priya Reddy",
+                "email": "priya.reddy@testschool.edu.in",
+                "role": "CO_ADMIN",
+                "phone": "9876543212"
+            },
+            token=self.gov_token
+        )
+        if success and response.get('role') == 'CO_ADMIN':
+            self.coadmin_id = response.get('id')
+            return True
+        return False
+
+    def test_list_teachers(self):
+        """Test listing teachers"""
+        success, response = self.run_test(
+            "List Teachers",
+            "GET",
+            "/users?role=TEACHER",
+            200,
+            token=self.gov_token
+        )
+        return success and 'users' in response and isinstance(response['users'], list)
+
+    def test_list_coadmins(self):
+        """Test listing co-admins"""
+        success, response = self.run_test(
+            "List Co-Admins",
+            "GET",
+            "/users?role=CO_ADMIN",
+            200,
+            token=self.gov_token
+        )
+        return success and 'users' in response and isinstance(response['users'], list)
+
+    def test_update_school(self):
+        """Test updating a school"""
+        if not self.created_school_id:
+            print("❌ Skipping school update - no created school available")
+            return False
+            
+        success, response = self.run_test(
+            "Update School",
+            "PUT",
+            f"/schools/{self.created_school_id}",
+            200,
+            data={
+                "name": "Updated Test School Name",
+                "city": "Hyderabad",
+                "state": "Telangana"
+            },
+            token=self.gov_token
+        )
+        return success and response.get('name') == "Updated Test School Name"
+
+    def test_update_section(self):
+        """Test updating a section"""
+        if not self.section_id:
+            print("❌ Skipping section update - no section available")
+            return False
+            
+        success, response = self.run_test(
+            "Update Section",
+            "PUT",
+            f"/sections/{self.section_id}",
+            200,
+            data={
+                "name": "Updated Section A1",
+                "grade": "9"
+            },
+            token=self.gov_token
+        )
+        return success and response.get('name') == "Updated Section A1"
+
+    def test_update_student(self):
+        """Test updating a student"""
+        if not self.student_id:
+            print("❌ Skipping student update - no student available")
+            return False
+            
+        success, response = self.run_test(
+            "Update Student",
+            "PUT",
+            f"/students/{self.student_id}",
+            200,
+            data={
+                "name": "Updated Ravi Kumar Singh",
+                "parent_mobile": "9876543299"
+            },
+            token=self.gov_token
+        )
+        return success and response.get('name') == "Updated Ravi Kumar Singh"
+
+    def test_update_user(self):
+        """Test updating a user"""
+        if not self.teacher_id:
+            print("❌ Skipping user update - no teacher available")
+            return False
+            
+        success, response = self.run_test(
+            "Update User (Teacher)",
+            "PUT",
+            f"/users/{self.teacher_id}",
+            200,
+            data={
+                "full_name": "Updated Rajesh Kumar Sharma",
+                "phone": "9876543299",
+                "subject": "Science"
+            },
+            token=self.gov_token
+        )
+        return success and response.get('full_name') == "Updated Rajesh Kumar Sharma"
+
+    def test_resend_credentials(self):
+        """Test resending user credentials"""
+        success, response = self.run_test(
+            "Resend Credentials",
+            "POST",
+            "/users/resend-credentials",
+            200,
+            data={
+                "email": "rajesh.sharma@testschool.edu.in",
+                "temp_password": "NewTemp123"
+            },
+            token=self.gov_token
+        )
+        return success and 'sent' in response
+
+    def test_unauthorized_access(self):
+        """Test unauthorized access without token"""
+        success, response = self.run_test(
+            "Unauthorized Access Test",
+            "GET",
+            "/schools",
+            401
+        )
+        return success  # Success means we got 401 as expected
+
+    def test_role_based_access_control(self):
+        """Test role-based access control - teacher trying to create school"""
+        # First create a teacher token if we don't have one
+        if not self.teacher_token:
+            # Try to login as teacher (this might fail if teacher doesn't exist yet)
+            teacher_login_success, teacher_response = self.run_test(
+                "Teacher Login Attempt",
+                "POST",
+                "/auth/login",
+                200,
+                data={"email": "rajesh.sharma@testschool.edu.in", "password": "NewTemp123"}
+            )
+            if teacher_login_success and 'access_token' in teacher_response:
+                self.teacher_token = teacher_response['access_token']
+        
+        if self.teacher_token:
+            success, response = self.run_test(
+                "Role-based Access Control Test (Teacher creating school)",
+                "POST",
+                "/schools",
+                403,
+                data={
+                    "name": "Unauthorized School",
+                    "principal_name": "Test Principal",
+                    "principal_email": "test@example.com"
+                },
+                token=self.teacher_token
+            )
+            return success  # Success means we got 403 as expected
+        else:
+            print("❌ Skipping RBAC test - no teacher token available")
+            return False
+
+    def test_create_school_comprehensive(self):
+        """Test creating a school with comprehensive data"""
+        success, response = self.run_test(
+            "Create School (Comprehensive)",
+            "POST",
+            "/schools",
+            200,
+            data={
+                "name": "Comprehensive Test School",
+                "address_line1": "123 Education Street",
+                "city": "Bangalore",
+                "state": "Karnataka",
+                "pincode": "560001",
+                "principal_name": "Dr. Sunita Mehta",
+                "principal_email": "sunita.mehta@testschool.edu.in",
+                "principal_phone": "9876543213"
+            },
+            token=self.gov_token
+        )
+        if success and 'id' in response:
+            self.created_school_id = response['id']
+            return True
+        return False
+
+    def test_error_handling_invalid_data(self):
+        """Test error handling with invalid data"""
+        success, response = self.run_test(
+            "Error Handling - Invalid Email",
+            "POST",
+            "/schools",
+            422,  # Validation error
+            data={
+                "name": "Test School",
+                "principal_name": "Test Principal",
+                "principal_email": "invalid-email"  # Invalid email format
+            },
+            token=self.gov_token
+        )
+        return success  # Success means we got validation error as expected
+
+    def test_duplicate_email_handling(self):
+        """Test handling of duplicate email addresses"""
+        success, response = self.run_test(
+            "Duplicate Email Handling",
+            "POST",
+            "/users/teachers",
+            409,  # Conflict error
+            data={
+                "full_name": "Another Teacher",
+                "email": "rajesh.sharma@testschool.edu.in",  # Same email as before
+                "role": "TEACHER",
+                "phone": "9876543214"
+            },
+            token=self.gov_token
+        )
+        return success  # Success means we got conflict error as expected
 
 def main():
     print("🚀 Starting Automated Attendance System API Tests")
