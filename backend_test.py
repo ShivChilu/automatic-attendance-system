@@ -195,12 +195,12 @@ class AttendanceAPITester:
             "/students",
             200,
             data={
-                "name": "Test Student Ravi Kumar",
+                "name": "Ravi Kumar Singh",
                 "student_code": "S1001",
                 "section_id": self.section_id,
                 "parent_mobile": "9876543210"
             },
-            token=self.school_token
+            token=self.gov_token
         )
         if success and 'id' in response:
             self.student_id = response['id']
