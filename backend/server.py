@@ -430,9 +430,9 @@ async def me(current_user: dict = Depends(get_current_user)):
     )
 
 # TEMP: Testing route registration issue
-@api.get("/temp-students-test")
-async def temp_students_test():
-    return {"message": "Temp students test works", "location": "after auth routes"}
+@api.get("/debug-route-2024")
+async def debug_route_unique():
+    return {"message": "Debug route working", "timestamp": "2024-test", "working": True}
 
 # Schools
 @api.post("/schools", response_model=School)
