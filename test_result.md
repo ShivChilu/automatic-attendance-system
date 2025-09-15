@@ -302,11 +302,10 @@ test_plan:
   - "Student Face Enrollment API"
   - "Attendance Marking API"
   - "Attendance Summary API"
-  - "Bug: 405 on /api/students/enroll"
   stuck_tasks:
   - "Bug: 405 on /api/students/enroll"
   test_all: false
-  test_priority: "stuck_first"
+  test_priority: "high_first"
 
 agent_communication:
     - agent: "main"
