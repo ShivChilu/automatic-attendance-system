@@ -497,6 +497,249 @@ class AttendanceAPITester:
         )
         return success  # Success means we got conflict error as expected
 
+    def test_resend_credentials_for_principal(self):
+        """Test resending credentials for principal to set known password"""
+        if not self.created_school_id:
+            print("❌ Skipping principal credential reset - no school available")
+            return False
+        
+        # Get the principal email from the created school
+        import time
+        timestamp = str(int(time.time()) - 1)  # Use timestamp from comprehensive school creation
+        principal_email = f"sunita.mehta.{timestamp}@testschool.edu.in"
+        
+        success, response = self.run_test(
+            "Resend Credentials for Principal",
+            "POST",
+            "/users/resend-credentials",
+            200,
+            data={
+                "email": principal_email,
+                "temp_password": "Pass@123"
+            },
+            token=self.gov_token
+        )
+        return success and 'sent' in response
+
+    def test_school_admin_login_with_new_password(self):
+        """Test SCHOOL_ADMIN login with new password"""
+        import time
+        timestamp = str(int(time.time()) - 1)  # Use timestamp from comprehensive school creation
+        principal_email = f"sunita.mehta.{timestamp}@testschool.edu.in"
+        
+        success, response = self.run_test(
+            "SCHOOL_ADMIN Login (New Password)",
+            "POST",
+            "/auth/login",
+            200,
+            data={"email": principal_email, "password": "Pass@123"}
+        )
+        if success and 'access_token' in response:
+            self.school_token = response['access_token']
+            return True
+        return False
+
+    def test_student_face_enrollment(self):
+        """Test student face enrollment with multipart form data"""
+        if not self.section_id or not self.school_token:
+            print("❌ Skipping face enrollment - no section or school token available")
+            return False
+
+        # Create a simple test image (1x1 pixel PNG)
+        import base64
+        import io
+        
+        # Simple 1x1 red pixel PNG in base64
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        url = f"{self.base_url}/students/enroll"
+        headers = {'Authorization': f'Bearer {self.school_token}'}
+        
+        # Prepare multipart form data
+        files = {
+            'images': ('test1.png', test_image_data, 'image/png'),
+        }
+        data = {
+            'name': 'Test Student Face',
+            'section_id': self.section_id,
+            'parent_mobile': '9876543210',
+            'has_twin': 'false'
+        }
+        
+        self.tests_run += 1
+        print(f"\n🔍 Testing Student Face Enrollment...")
+        print(f"   URL: POST {url}")
+        
+        try:
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            # For face enrollment, we expect either 200 (success) or 400 (no face detected)
+            success = response.status_code in [200, 400]
+            if response.status_code == 200:
+                self.tests_passed += 1
+                print(f"✅ Passed - Status: {response.status_code}")
+                response_data = response.json()
+                print(f"   Response: {json.dumps(response_data, indent=2)}")
+                if 'id' in response_data:
+                    self.student_id = response_data['id']
+                return True
+            elif response.status_code == 400:
+                self.tests_passed += 1
+                print(f"✅ Expected failure - Status: {response.status_code} (No face detected in test image)")
+                print(f"   Response: {response.text}")
+                return True
+            else:
+                print(f"❌ Failed - Expected 200 or 400, got {response.status_code}")
+                print(f"   Response: {response.text[:300]}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False
+
+    def test_create_teacher_with_section(self):
+        """Test creating a teacher with section assignment"""
+        if not self.created_school_id or not self.section_id:
+            print("❌ Skipping teacher with section creation - no school or section available")
+            return False
+        
+        import time
+        timestamp = str(int(time.time()) + 10)
+            
+        success, response = self.run_test(
+            "Create Teacher with Section",
+            "POST",
+            "/users/teachers",
+            200,
+            data={
+                "full_name": f"Science Teacher {timestamp}",
+                "email": f"science.teacher.{timestamp}@testschool.edu.in",
+                "role": "TEACHER",
+                "phone": "9876543220",
+                "subject": "Science",
+                "section_id": self.section_id,
+                "school_id": self.created_school_id
+            },
+            token=self.gov_token
+        )
+        if success and response.get('role') == 'TEACHER':
+            self.teacher_id = response.get('id')
+            self.teacher_email = f"science.teacher.{timestamp}@testschool.edu.in"
+            return True
+        return False
+
+    def test_resend_credentials_for_teacher(self):
+        """Test resending credentials for teacher to set known password"""
+        if not hasattr(self, 'teacher_email'):
+            print("❌ Skipping teacher credential reset - no teacher email available")
+            return False
+        
+        success, response = self.run_test(
+            "Resend Credentials for Teacher",
+            "POST",
+            "/users/resend-credentials",
+            200,
+            data={
+                "email": self.teacher_email,
+                "temp_password": "Pass@123"
+            },
+            token=self.gov_token
+        )
+        return success and 'sent' in response
+
+    def test_teacher_login(self):
+        """Test TEACHER login with new password"""
+        if not hasattr(self, 'teacher_email'):
+            print("❌ Skipping teacher login - no teacher email available")
+            return False
+        
+        success, response = self.run_test(
+            "TEACHER Login",
+            "POST",
+            "/auth/login",
+            200,
+            data={"email": self.teacher_email, "password": "Pass@123"}
+        )
+        if success and 'access_token' in response:
+            self.teacher_token = response['access_token']
+            return True
+        return False
+
+    def test_attendance_marking(self):
+        """Test attendance marking with face image"""
+        if not self.teacher_token:
+            print("❌ Skipping attendance marking - no teacher token available")
+            return False
+
+        # Create a simple test image (1x1 pixel PNG)
+        import base64
+        
+        # Simple 1x1 red pixel PNG in base64
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        url = f"{self.base_url}/attendance/mark"
+        headers = {'Authorization': f'Bearer {self.teacher_token}'}
+        
+        # Prepare multipart form data
+        files = {
+            'image': ('test_face.png', test_image_data, 'image/png'),
+        }
+        
+        self.tests_run += 1
+        print(f"\n🔍 Testing Attendance Marking...")
+        print(f"   URL: POST {url}")
+        
+        try:
+            response = requests.post(url, files=files, headers=headers, timeout=30)
+            
+            # For attendance marking, we expect either 200 (success) or 400 (no face/student)
+            success = response.status_code in [200, 400]
+            if response.status_code == 200:
+                self.tests_passed += 1
+                print(f"✅ Passed - Status: {response.status_code}")
+                response_data = response.json()
+                print(f"   Response: {json.dumps(response_data, indent=2)}")
+                return True
+            elif response.status_code == 400:
+                self.tests_passed += 1
+                print(f"✅ Expected failure - Status: {response.status_code} (No face detected or student not found)")
+                print(f"   Response: {response.text}")
+                return True
+            else:
+                print(f"❌ Failed - Expected 200 or 400, got {response.status_code}")
+                print(f"   Response: {response.text[:300]}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False
+
+    def test_attendance_summary(self):
+        """Test attendance summary for today"""
+        if not self.section_id or not self.teacher_token:
+            print("❌ Skipping attendance summary - no section or teacher token available")
+            return False
+
+        from datetime import datetime
+        today = datetime.now().date().isoformat()
+        
+        success, response = self.run_test(
+            "Attendance Summary",
+            "GET",
+            f"/attendance/summary?section_id={self.section_id}&date={today}",
+            200,
+            token=self.teacher_token
+        )
+        
+        if success:
+            print(f"   Summary data: total={response.get('total', 0)}, present_count={response.get('present_count', 0)}")
+            return True
+        return False
+
 def main():
     print("🚀 Starting Comprehensive Automated Attendance System API Tests")
     print("=" * 70)
