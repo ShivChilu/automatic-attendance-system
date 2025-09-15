@@ -947,7 +947,7 @@ class AttendanceAPITester:
         headers = {'Authorization': f'Bearer {self.school_token}'}
         
         # Test 1: Old endpoint (should not exist or return 404/405)
-        old_url = f"{self.base_url}/api/students/enroll"
+        old_url = f"{self.base_url}/students/enroll"
         print(f"   Testing old endpoint: {old_url}")
         
         self.tests_run += 1
