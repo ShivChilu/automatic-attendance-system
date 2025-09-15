@@ -1126,7 +1126,7 @@ class AttendanceAPITester:
             return False
 
     def _test_twin_enrollment(self):
-        """Test twin enrollment"""
+        """Test twin enrollment using NEW endpoint"""
         import base64
         import uuid
         
@@ -1134,7 +1134,8 @@ class AttendanceAPITester:
             'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
         )
         
-        url = f"{self.base_url}/students/enroll"
+        # Use the NEW enrollment endpoint
+        url = f"{self.base_url}/api/enrollment/students"
         headers = {'Authorization': f'Bearer {self.school_token}'}
         
         twin_group_id = str(uuid.uuid4())
