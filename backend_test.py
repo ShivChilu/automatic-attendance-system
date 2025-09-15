@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 
 class AttendanceAPITester:
-    def __init__(self, base_url="https://schooltrack-7.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://313ab390-493d-43ac-a33c-fbd713fbd8e3.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.gov_token = None
         self.school_token = None
