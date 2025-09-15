@@ -624,7 +624,8 @@ async def attendance_summary(section_id: str, date: Optional[str] = None, curren
         date = today.isoformat()
 
     students = await db.students.find({"section_id": section_id}).to_list(5000)
-    ids = [s['id'] for s in students]
+    # ids not used in response; keep for potential future use
+    ids = [s['id'] for s in students]  # noqa: F841
     atts = await db.attendance.find({"section_id": section_id, "date": date}).to_list(10000)
     present_ids = {a['student_id'] for a in atts if a.get('status') == 'Present'}
     items = [AttendanceSummaryItem(student_id=s['id'], name=s['name'], present=s['id'] in present_ids) for s in students]
