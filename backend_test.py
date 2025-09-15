@@ -765,68 +765,235 @@ class AttendanceAPITester:
             print(f"❌ Failed - Error: {str(e)}")
             return False
 
-    def test_405_error_investigation(self):
-        """Investigate the 405 error on /api/students/enroll endpoint"""
+    def test_renamed_enrollment_endpoint(self):
+        """Test the renamed student enrollment endpoint /api/enrollment/students"""
         if not self.section_id or not self.school_token:
-            print("❌ Skipping 405 investigation - no section or school token available")
+            print("❌ Skipping renamed enrollment test - no section or school token available")
             return False
 
-        print(f"\n🔍 Investigating 405 Error on /api/students/enroll...")
+        print(f"\n🔍 Testing Renamed Enrollment Endpoint /api/enrollment/students...")
         
-        # Test 1: Check if endpoint exists with OPTIONS
-        url = f"{self.base_url}/students/enroll"
+        # Test 1: Test new endpoint with external URL
+        new_url = f"{self.base_url}/api/enrollment/students"
         headers = {'Authorization': f'Bearer {self.school_token}'}
         
+        print(f"   Testing new endpoint: {new_url}")
+        
+        # Create test image
+        import base64
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        files = {
+            'images': ('test_enrollment.png', test_image_data, 'image/png'),
+        }
+        data = {
+            'name': 'Test Student Renamed Endpoint',
+            'section_id': self.section_id,
+            'parent_mobile': '9876543210',
+            'has_twin': 'false'
+        }
+        
         self.tests_run += 1
-        print(f"   Testing OPTIONS request to {url}")
         
         try:
-            response = requests.options(url, headers=headers, timeout=30)
-            print(f"   OPTIONS Response: {response.status_code}")
-            print(f"   Allowed Methods: {response.headers.get('Allow', 'Not specified')}")
+            # Test OPTIONS first
+            print(f"   Testing OPTIONS on new endpoint...")
+            options_response = requests.options(new_url, headers=headers, timeout=30)
+            print(f"   OPTIONS Response: {options_response.status_code}")
+            print(f"   Allowed Methods: {options_response.headers.get('Allow', 'Not specified')}")
             
-            # Test 2: Try POST with minimal data to see exact error
-            print(f"   Testing POST request with minimal data...")
-            
-            # Create a simple test image
-            import base64
-            test_image_data = base64.b64decode(
-                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
-            )
-            
-            files = {
-                'images': ('test1.png', test_image_data, 'image/png'),
-            }
-            data = {
-                'name': 'Test Student 405',
-                'section_id': self.section_id,
-                'parent_mobile': '9876543210',
-                'has_twin': 'false'
-            }
-            
-            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            # Test POST
+            print(f"   Testing POST on new endpoint...")
+            response = requests.post(new_url, files=files, data=data, headers=headers, timeout=30)
             print(f"   POST Response: {response.status_code}")
-            print(f"   Response Text: {response.text[:500]}")
+            print(f"   Response Headers: {dict(response.headers)}")
             
-            # Test 3: Try the alternative endpoint with trailing slash
-            url_alt = f"{self.base_url}/students/enroll/"
-            print(f"   Testing POST request to alternative URL: {url_alt}")
-            
-            response_alt = requests.post(url_alt, files=files, data=data, headers=headers, timeout=30)
-            print(f"   Alternative URL Response: {response_alt.status_code}")
-            print(f"   Alternative Response Text: {response_alt.text[:500]}")
-            
-            # Success if we get anything other than 405
-            if response.status_code != 405 or response_alt.status_code != 405:
+            if response.status_code == 405:
+                print(f"   ❌ Still getting 405 Method Not Allowed")
+                print(f"   Allow header: {response.headers.get('Allow', 'Not specified')}")
+                print(f"   Response: {response.text[:500]}")
+                return False
+            elif response.status_code in [200, 400]:  # 200 = success, 400 = no face detected
                 self.tests_passed += 1
-                print(f"✅ 405 Error resolved - got status codes: {response.status_code}, {response_alt.status_code}")
+                print(f"   ✅ New endpoint working - Status: {response.status_code}")
+                if response.status_code == 200:
+                    response_data = response.json()
+                    print(f"   Response: {json.dumps(response_data, indent=2)}")
+                else:
+                    print(f"   Expected 400 (no face detected): {response.text}")
                 return True
             else:
-                print(f"❌ Still getting 405 errors on both endpoints")
+                print(f"   ❌ Unexpected status code: {response.status_code}")
+                print(f"   Response: {response.text[:500]}")
                 return False
                 
         except Exception as e:
-            print(f"❌ Failed - Error: {str(e)}")
+            print(f"   ❌ Error testing new endpoint: {str(e)}")
+            return False
+
+    def test_internal_vs_external_enrollment(self):
+        """Compare internal vs external URL behavior for enrollment endpoint"""
+        if not self.section_id or not self.school_token:
+            print("❌ Skipping internal vs external test - no section or school token available")
+            return False
+
+        print(f"\n🔍 Comparing Internal vs External Enrollment URLs...")
+        
+        # Test data
+        import base64
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        files = {
+            'images': ('test_compare.png', test_image_data, 'image/png'),
+        }
+        data = {
+            'name': 'Test Student Compare URLs',
+            'section_id': self.section_id,
+            'parent_mobile': '9876543210',
+            'has_twin': 'false'
+        }
+        
+        headers = {'Authorization': f'Bearer {self.school_token}'}
+        
+        # Test 1: Internal URL (localhost:8001)
+        internal_url = "http://localhost:8001/api/enrollment/students"
+        print(f"   Testing internal URL: {internal_url}")
+        
+        self.tests_run += 1
+        
+        try:
+            internal_response = requests.post(internal_url, files=files, data=data, headers=headers, timeout=30)
+            print(f"   Internal Response: {internal_response.status_code}")
+            print(f"   Internal Allow Header: {internal_response.headers.get('Allow', 'Not specified')}")
+            
+            if internal_response.status_code == 405:
+                print(f"   Internal Response Text: {internal_response.text[:300]}")
+            
+        except Exception as e:
+            print(f"   Internal URL Error: {str(e)}")
+            internal_response = None
+        
+        # Test 2: External URL (smarttrack-5.preview.emergentagent.com)
+        external_url = f"{self.base_url}/api/enrollment/students"
+        print(f"   Testing external URL: {external_url}")
+        
+        try:
+            external_response = requests.post(external_url, files=files, data=data, headers=headers, timeout=30)
+            print(f"   External Response: {external_response.status_code}")
+            print(f"   External Allow Header: {external_response.headers.get('Allow', 'Not specified')}")
+            
+            if external_response.status_code == 405:
+                print(f"   External Response Text: {external_response.text[:300]}")
+            
+        except Exception as e:
+            print(f"   External URL Error: {str(e)}")
+            external_response = None
+        
+        # Compare results
+        if internal_response and external_response:
+            if internal_response.status_code != external_response.status_code:
+                print(f"   🔍 DIFFERENCE FOUND:")
+                print(f"     Internal: {internal_response.status_code}")
+                print(f"     External: {external_response.status_code}")
+                
+                if external_response.status_code == 405 and internal_response.status_code != 405:
+                    print(f"   ❌ External URL still has routing issue - returns 405")
+                    print(f"   ✅ Internal URL works correctly - returns {internal_response.status_code}")
+                    return False
+                elif external_response.status_code != 405:
+                    print(f"   ✅ Both URLs working - issue resolved!")
+                    self.tests_passed += 1
+                    return True
+            else:
+                if external_response.status_code == 405:
+                    print(f"   ❌ Both URLs return 405 - issue not resolved")
+                    return False
+                else:
+                    print(f"   ✅ Both URLs working correctly - status {external_response.status_code}")
+                    self.tests_passed += 1
+                    return True
+        
+        return False
+
+    def test_old_vs_new_enrollment_endpoints(self):
+        """Test old /api/students/enroll vs new /api/enrollment/students endpoints"""
+        if not self.section_id or not self.school_token:
+            print("❌ Skipping old vs new endpoint test - no section or school token available")
+            return False
+
+        print(f"\n🔍 Testing Old vs New Enrollment Endpoints...")
+        
+        # Test data
+        import base64
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        files = {
+            'images': ('test_old_new.png', test_image_data, 'image/png'),
+        }
+        data = {
+            'name': 'Test Student Old vs New',
+            'section_id': self.section_id,
+            'parent_mobile': '9876543210',
+            'has_twin': 'false'
+        }
+        
+        headers = {'Authorization': f'Bearer {self.school_token}'}
+        
+        # Test 1: Old endpoint (should not exist or return 404/405)
+        old_url = f"{self.base_url}/api/students/enroll"
+        print(f"   Testing old endpoint: {old_url}")
+        
+        self.tests_run += 1
+        
+        try:
+            old_response = requests.post(old_url, files=files, data=data, headers=headers, timeout=30)
+            print(f"   Old endpoint response: {old_response.status_code}")
+            print(f"   Old endpoint Allow header: {old_response.headers.get('Allow', 'Not specified')}")
+            
+            if old_response.status_code == 405:
+                print(f"   Old endpoint returns 405 (expected - routing conflict)")
+            elif old_response.status_code == 404:
+                print(f"   Old endpoint returns 404 (endpoint removed)")
+            else:
+                print(f"   Old endpoint unexpected response: {old_response.text[:300]}")
+            
+        except Exception as e:
+            print(f"   Old endpoint error: {str(e)}")
+            old_response = None
+        
+        # Test 2: New endpoint (should work)
+        new_url = f"{self.base_url}/api/enrollment/students"
+        print(f"   Testing new endpoint: {new_url}")
+        
+        try:
+            new_response = requests.post(new_url, files=files, data=data, headers=headers, timeout=30)
+            print(f"   New endpoint response: {new_response.status_code}")
+            print(f"   New endpoint Allow header: {new_response.headers.get('Allow', 'Not specified')}")
+            
+            if new_response.status_code in [200, 400]:  # Success or expected face detection failure
+                print(f"   ✅ New endpoint working correctly")
+                if new_response.status_code == 200:
+                    response_data = new_response.json()
+                    print(f"   Response: {json.dumps(response_data, indent=2)}")
+                self.tests_passed += 1
+                return True
+            elif new_response.status_code == 405:
+                print(f"   ❌ New endpoint still returns 405 - issue not resolved")
+                print(f"   Response: {new_response.text[:300]}")
+                return False
+            else:
+                print(f"   ❌ New endpoint unexpected response: {new_response.status_code}")
+                print(f"   Response: {new_response.text[:300]}")
+                return False
+            
+        except Exception as e:
+            print(f"   New endpoint error: {str(e)}")
             return False
 
     def test_face_enrollment_comprehensive(self):
