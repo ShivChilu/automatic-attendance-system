@@ -475,14 +475,12 @@ class AttendanceAPITester:
 
     def test_duplicate_email_handling(self):
         """Test handling of duplicate email addresses"""
-        if not self.created_school_id or not self.teacher_id:
-            print("❌ Skipping duplicate email test - no school or teacher available")
+        if not self.created_school_id or not hasattr(self, 'teacher_email'):
+            print("❌ Skipping duplicate email test - no school or teacher email available")
             return False
         
-        # Get the teacher's email from the created teacher
-        import time
-        teacher_timestamp = str(int(time.time()) - 2)  # Use the timestamp from teacher creation
-        teacher_email = f"rajesh.sharma.{teacher_timestamp}@testschool.edu.in"
+        # Use the stored teacher email
+        teacher_email = self.teacher_email
             
         success, response = self.run_test(
             "Duplicate Email Handling",
