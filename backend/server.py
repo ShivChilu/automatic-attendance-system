@@ -419,7 +419,7 @@ async def update_school(school_id: str, payload: SchoolUpdate, _: dict = Depends
     # if principal_email changes, ensure no user conflict
     if 'principal_email' in upd:
         upd['principal_email'] = upd['principal_email'].lower()
-    res = await db.schools.find_one_and_update({"id": school_id}, {"$set": upd}, return_document=True)
+    await db.schools.find_one_and_update({"id": school_id}, {"$set": upd}, return_document=True)
     doc = await db.schools.find_one({"id": school_id})
     if not doc:
         raise HTTPException(status_code=404, detail="School not found")
