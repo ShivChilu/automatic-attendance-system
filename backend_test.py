@@ -432,6 +432,8 @@ class AttendanceAPITester:
         import time
         timestamp = str(int(time.time()) + 1)
         
+        principal_email = f"sunita.mehta.{timestamp}@testschool.edu.in"
+        
         success, response = self.run_test(
             "Create School (Comprehensive)",
             "POST",
@@ -444,13 +446,14 @@ class AttendanceAPITester:
                 "state": "Karnataka",
                 "pincode": "560001",
                 "principal_name": f"Dr. Sunita Mehta {timestamp}",
-                "principal_email": f"sunita.mehta.{timestamp}@testschool.edu.in",
+                "principal_email": principal_email,
                 "principal_phone": "9876543213"
             },
             token=self.gov_token
         )
         if success and 'id' in response:
             self.created_school_id = response['id']  # Update with latest school
+            self.principal_email = principal_email  # Store for later use
             return True
         return False
 
