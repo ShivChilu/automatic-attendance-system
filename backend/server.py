@@ -569,7 +569,7 @@ class StudentEnrollResponse(BaseModel):
     parent_mobile: Optional[str] = None
     embeddings_count: int
 
-@api.post("/students/enroll", response_model=StudentEnrollResponse)
+@api.post("/enrollment/students", response_model=StudentEnrollResponse)
 async def enroll_student(
     name: str = Form(...),
     section_id: str = Form(...),
