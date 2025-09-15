@@ -7,6 +7,8 @@ import { Card } from "./components/ui/card";
 import { Input } from "./components/ui/input";
 import { Label } from "./components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select";
+import EnrollmentWithFace from "./components/EnrollmentWithFace";
+import TeacherScan from "./components/TeacherScan";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -393,6 +395,8 @@ function SchoolAdminLike({ me }) {
         </form>
       </Card>
 
+      <EnrollmentWithFace sections={sections} />
+
       <Card className="card wide">
         <h3>Students in selected section</h3>
         {selectedSec ? (
@@ -485,21 +489,12 @@ function SchoolAdminLike({ me }) {
 
 function TeacherView({ me }) {
   const school = useMySchool(!!me);
-  const [section, setSection] = useState(null);
-  useEffect(() => {
-    if (me?.section_id) {
-      api.get("/sections").then((res) => {
-        const s = res.data.find((x) => x.id === me.section_id);
-        setSection(s || null);
-      });
-    }
-  }, [me]);
   return (
     <div className="dash_grid">
       <Card className="card wide">
-        <h3>{school ? school.name : "My School"} • {me.full_name} {section ? `• ${section.name}${section.grade ? ` (Grade ${section.grade})` : ''}` : ''}</h3>
-        <p className="muted">Attendance marking and history will appear here in Phase 2.</p>
+        <h3>{school ? school.name : "My School"} • {me.full_name}</h3>
       </Card>
+      <TeacherScan me={me} />
     </div>
   );
 }
