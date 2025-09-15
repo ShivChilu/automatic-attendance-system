@@ -553,7 +553,6 @@ async def enroll_student(
     await db.students.insert_one(doc)
     return StudentEnrollResponse(id=sid, name=name, section_id=section_id, parent_mobile=parent_mobile, embeddings_count=len(embeddings))
 
-class AttendanceMarkResponse(BaseModel):
 # Preflight support for CORS-sensitive routes
 @api.options("/students/enroll")
 async def options_students_enroll():
@@ -563,6 +562,7 @@ async def options_students_enroll():
 async def options_attendance_mark():
     return {"ok": True}
 
+class AttendanceMarkResponse(BaseModel):
     status: str
     student_id: Optional[str] = None
     student_name: Optional[str] = None
