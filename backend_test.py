@@ -503,10 +503,13 @@ class AttendanceAPITester:
             print("❌ Skipping principal credential reset - no school available")
             return False
         
-        # Get the principal email from the created school
-        import time
-        timestamp = str(int(time.time()) - 1)  # Use timestamp from comprehensive school creation
-        principal_email = f"sunita.mehta.{timestamp}@testschool.edu.in"
+        # Get the principal email from the created school - use the same timestamp as comprehensive school
+        # We need to store this when creating the school
+        if not hasattr(self, 'principal_email'):
+            print("❌ Skipping principal credential reset - no principal email stored")
+            return False
+        
+        principal_email = self.principal_email
         
         success, response = self.run_test(
             "Resend Credentials for Principal",
