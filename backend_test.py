@@ -1215,6 +1215,8 @@ def main():
         
         # User Management Tests (needed for face detection testing)
         ("Create Co-Admin", tester.test_create_coadmin),
+        ("Resend Credentials for Co-Admin", tester.test_resend_credentials_for_coadmin),
+        ("CO_ADMIN Login", tester.test_coadmin_login),
         ("Resend Credentials for Principal", tester.test_resend_credentials_for_principal),
         ("SCHOOL_ADMIN Login (New Password)", tester.test_school_admin_login_with_new_password),
         ("Create Teacher with Section", tester.test_create_teacher_with_section),
