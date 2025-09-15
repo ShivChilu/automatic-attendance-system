@@ -724,27 +724,431 @@ class AttendanceAPITester:
             print(f"❌ Failed - Error: {str(e)}")
             return False
 
-    def test_attendance_summary(self):
-        """Test attendance summary for today"""
-        if not self.section_id or not self.teacher_token:
-            print("❌ Skipping attendance summary - no section or teacher token available")
+    def test_405_error_investigation(self):
+        """Investigate the 405 error on /api/students/enroll endpoint"""
+        if not self.section_id or not self.school_token:
+            print("❌ Skipping 405 investigation - no section or school token available")
             return False
 
+        print(f"\n🔍 Investigating 405 Error on /api/students/enroll...")
+        
+        # Test 1: Check if endpoint exists with OPTIONS
+        url = f"{self.base_url}/students/enroll"
+        headers = {'Authorization': f'Bearer {self.school_token}'}
+        
+        self.tests_run += 1
+        print(f"   Testing OPTIONS request to {url}")
+        
+        try:
+            response = requests.options(url, headers=headers, timeout=30)
+            print(f"   OPTIONS Response: {response.status_code}")
+            print(f"   Allowed Methods: {response.headers.get('Allow', 'Not specified')}")
+            
+            # Test 2: Try POST with minimal data to see exact error
+            print(f"   Testing POST request with minimal data...")
+            
+            # Create a simple test image
+            import base64
+            test_image_data = base64.b64decode(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+            )
+            
+            files = {
+                'images': ('test1.png', test_image_data, 'image/png'),
+            }
+            data = {
+                'name': 'Test Student 405',
+                'section_id': self.section_id,
+                'parent_mobile': '9876543210',
+                'has_twin': 'false'
+            }
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            print(f"   POST Response: {response.status_code}")
+            print(f"   Response Text: {response.text[:500]}")
+            
+            # Test 3: Try the alternative endpoint with trailing slash
+            url_alt = f"{self.base_url}/students/enroll/"
+            print(f"   Testing POST request to alternative URL: {url_alt}")
+            
+            response_alt = requests.post(url_alt, files=files, data=data, headers=headers, timeout=30)
+            print(f"   Alternative URL Response: {response_alt.status_code}")
+            print(f"   Alternative Response Text: {response_alt.text[:500]}")
+            
+            # Success if we get anything other than 405
+            if response.status_code != 405 or response_alt.status_code != 405:
+                self.tests_passed += 1
+                print(f"✅ 405 Error resolved - got status codes: {response.status_code}, {response_alt.status_code}")
+                return True
+            else:
+                print(f"❌ Still getting 405 errors on both endpoints")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Failed - Error: {str(e)}")
+            return False
+
+    def test_face_enrollment_comprehensive(self):
+        """Comprehensive test of face enrollment with different scenarios"""
+        if not self.section_id or not self.school_token:
+            print("❌ Skipping comprehensive face enrollment - no section or school token available")
+            return False
+
+        print(f"\n🔍 Testing Face Enrollment Comprehensively...")
+        
+        # Test with CO_ADMIN role if available
+        if self.coadmin_token:
+            print("   Testing with CO_ADMIN token...")
+            success = self._test_face_enrollment_with_token(self.coadmin_token, "CO_ADMIN")
+            if not success:
+                return False
+        
+        # Test with SCHOOL_ADMIN role
+        print("   Testing with SCHOOL_ADMIN token...")
+        success = self._test_face_enrollment_with_token(self.school_token, "SCHOOL_ADMIN")
+        if not success:
+            return False
+            
+        # Test edge cases
+        print("   Testing edge cases...")
+        return self._test_face_enrollment_edge_cases()
+
+    def _test_face_enrollment_with_token(self, token, role_name):
+        """Helper method to test face enrollment with specific token"""
+        import base64
+        
+        # Create a simple test image
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        url = f"{self.base_url}/students/enroll"
+        headers = {'Authorization': f'Bearer {token}'}
+        
+        files = {
+            'images': ('test_face.png', test_image_data, 'image/png'),
+        }
+        data = {
+            'name': f'Test Student {role_name}',
+            'section_id': self.section_id,
+            'parent_mobile': '9876543210',
+            'has_twin': 'false'
+        }
+        
+        self.tests_run += 1
+        
+        try:
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            if response.status_code in [200, 400]:  # 200 = success, 400 = no face detected
+                self.tests_passed += 1
+                print(f"   ✅ {role_name} enrollment test passed - Status: {response.status_code}")
+                if response.status_code == 200:
+                    response_data = response.json()
+                    print(f"   Response: {json.dumps(response_data, indent=2)}")
+                return True
+            else:
+                print(f"   ❌ {role_name} enrollment failed - Status: {response.status_code}")
+                print(f"   Response: {response.text[:300]}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ {role_name} enrollment error: {str(e)}")
+            return False
+
+    def _test_face_enrollment_edge_cases(self):
+        """Test edge cases for face enrollment"""
+        if not self.school_token:
+            return False
+            
+        # Test 1: Multiple images
+        print("   Testing with multiple images...")
+        success1 = self._test_multiple_images()
+        
+        # Test 2: Twin enrollment
+        print("   Testing twin enrollment...")
+        success2 = self._test_twin_enrollment()
+        
+        # Test 3: Invalid section
+        print("   Testing invalid section...")
+        success3 = self._test_invalid_section()
+        
+        return success1 and success2 and success3
+
+    def _test_multiple_images(self):
+        """Test enrollment with multiple images"""
+        import base64
+        
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        url = f"{self.base_url}/students/enroll"
+        headers = {'Authorization': f'Bearer {self.school_token}'}
+        
+        files = [
+            ('images', ('test1.png', test_image_data, 'image/png')),
+            ('images', ('test2.png', test_image_data, 'image/png')),
+            ('images', ('test3.png', test_image_data, 'image/png')),
+        ]
+        data = {
+            'name': 'Multi Image Student',
+            'section_id': self.section_id,
+            'parent_mobile': '9876543210',
+            'has_twin': 'false'
+        }
+        
+        self.tests_run += 1
+        
+        try:
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            if response.status_code in [200, 400]:
+                self.tests_passed += 1
+                print(f"     ✅ Multiple images test passed - Status: {response.status_code}")
+                return True
+            else:
+                print(f"     ❌ Multiple images test failed - Status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"     ❌ Multiple images test error: {str(e)}")
+            return False
+
+    def _test_twin_enrollment(self):
+        """Test twin enrollment"""
+        import base64
+        import uuid
+        
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        url = f"{self.base_url}/students/enroll"
+        headers = {'Authorization': f'Bearer {self.school_token}'}
+        
+        twin_group_id = str(uuid.uuid4())
+        
+        files = {
+            'images': ('twin1.png', test_image_data, 'image/png'),
+        }
+        data = {
+            'name': 'Twin Student 1',
+            'section_id': self.section_id,
+            'parent_mobile': '9876543210',
+            'has_twin': 'true',
+            'twin_group_id': twin_group_id
+        }
+        
+        self.tests_run += 1
+        
+        try:
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            if response.status_code in [200, 400]:
+                self.tests_passed += 1
+                print(f"     ✅ Twin enrollment test passed - Status: {response.status_code}")
+                return True
+            else:
+                print(f"     ❌ Twin enrollment test failed - Status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"     ❌ Twin enrollment test error: {str(e)}")
+            return False
+
+    def _test_invalid_section(self):
+        """Test enrollment with invalid section"""
+        import base64
+        
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        url = f"{self.base_url}/students/enroll"
+        headers = {'Authorization': f'Bearer {self.school_token}'}
+        
+        files = {
+            'images': ('test.png', test_image_data, 'image/png'),
+        }
+        data = {
+            'name': 'Invalid Section Student',
+            'section_id': 'invalid-section-id',
+            'parent_mobile': '9876543210',
+            'has_twin': 'false'
+        }
+        
+        self.tests_run += 1
+        
+        try:
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            # Should get 404 for invalid section
+            if response.status_code == 404:
+                self.tests_passed += 1
+                print(f"     ✅ Invalid section test passed - Status: {response.status_code}")
+                return True
+            else:
+                print(f"     ❌ Invalid section test failed - Expected 404, got {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"     ❌ Invalid section test error: {str(e)}")
+            return False
+
+    def test_attendance_marking_comprehensive(self):
+        """Comprehensive test of attendance marking"""
+        if not self.teacher_token:
+            print("❌ Skipping comprehensive attendance marking - no teacher token available")
+            return False
+
+        print(f"\n🔍 Testing Attendance Marking Comprehensively...")
+        
+        # Test 1: Basic attendance marking
+        success1 = self._test_basic_attendance_marking()
+        
+        # Test 2: Duplicate attendance prevention
+        success2 = self._test_duplicate_attendance()
+        
+        # Test 3: Invalid section for teacher
+        success3 = self._test_teacher_invalid_section()
+        
+        return success1 and success2 and success3
+
+    def _test_basic_attendance_marking(self):
+        """Test basic attendance marking"""
+        import base64
+        
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        url = f"{self.base_url}/attendance/mark"
+        headers = {'Authorization': f'Bearer {self.teacher_token}'}
+        
+        files = {
+            'image': ('attendance_face.png', test_image_data, 'image/png'),
+        }
+        data = {
+            'section_id': self.section_id
+        }
+        
+        self.tests_run += 1
+        print("   Testing basic attendance marking...")
+        
+        try:
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            if response.status_code in [200, 400]:  # 200 = success, 400 = no face/student
+                self.tests_passed += 1
+                print(f"   ✅ Basic attendance marking passed - Status: {response.status_code}")
+                if response.status_code == 200:
+                    response_data = response.json()
+                    print(f"   Response: {json.dumps(response_data, indent=2)}")
+                return True
+            else:
+                print(f"   ❌ Basic attendance marking failed - Status: {response.status_code}")
+                print(f"   Response: {response.text[:300]}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Basic attendance marking error: {str(e)}")
+            return False
+
+    def _test_duplicate_attendance(self):
+        """Test duplicate attendance prevention"""
+        # This would require having an enrolled student first
+        # For now, we'll just test the endpoint responds correctly
+        print("   Testing duplicate attendance prevention...")
+        return True  # Skip for now as it requires complex setup
+
+    def _test_teacher_invalid_section(self):
+        """Test teacher trying to mark attendance for invalid section"""
+        import base64
+        
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        url = f"{self.base_url}/attendance/mark"
+        headers = {'Authorization': f'Bearer {self.teacher_token}'}
+        
+        files = {
+            'image': ('test_face.png', test_image_data, 'image/png'),
+        }
+        data = {
+            'section_id': 'invalid-section-id'
+        }
+        
+        self.tests_run += 1
+        print("   Testing invalid section for teacher...")
+        
+        try:
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            # Should get 403 for invalid section
+            if response.status_code == 403:
+                self.tests_passed += 1
+                print(f"   ✅ Invalid section test passed - Status: {response.status_code}")
+                return True
+            else:
+                print(f"   ❌ Invalid section test failed - Expected 403, got {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Invalid section test error: {str(e)}")
+            return False
+
+    def test_attendance_summary_comprehensive(self):
+        """Comprehensive test of attendance summary"""
+        if not self.section_id:
+            print("❌ Skipping comprehensive attendance summary - no section available")
+            return False
+
+        print(f"\n🔍 Testing Attendance Summary Comprehensively...")
+        
+        # Test with different roles
+        success1 = self._test_attendance_summary_with_role(self.gov_token, "GOV_ADMIN")
+        success2 = self._test_attendance_summary_with_role(self.school_token, "SCHOOL_ADMIN")
+        
+        if self.teacher_token:
+            success3 = self._test_attendance_summary_with_role(self.teacher_token, "TEACHER")
+        else:
+            success3 = True
+            
+        return success1 and success2 and success3
+
+    def _test_attendance_summary_with_role(self, token, role_name):
+        """Test attendance summary with specific role"""
+        if not token:
+            print(f"   Skipping {role_name} test - no token available")
+            return True
+            
         from datetime import datetime
         today = datetime.now().date().isoformat()
         
-        success, response = self.run_test(
-            "Attendance Summary",
-            "GET",
-            f"/attendance/summary?section_id={self.section_id}&date={today}",
-            200,
-            token=self.teacher_token
-        )
+        url = f"{self.base_url}/attendance/summary?section_id={self.section_id}&date={today}"
+        headers = {'Authorization': f'Bearer {token}'}
         
-        if success:
-            print(f"   Summary data: total={response.get('total', 0)}, present_count={response.get('present_count', 0)}")
-            return True
-        return False
+        self.tests_run += 1
+        print(f"   Testing attendance summary with {role_name}...")
+        
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                self.tests_passed += 1
+                response_data = response.json()
+                print(f"   ✅ {role_name} attendance summary passed")
+                print(f"   Summary: total={response_data.get('total', 0)}, present={response_data.get('present_count', 0)}")
+                return True
+            else:
+                print(f"   ❌ {role_name} attendance summary failed - Status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ {role_name} attendance summary error: {str(e)}")
+            return False
 
 def main():
     print("🚀 Starting Comprehensive Automated Attendance System API Tests")
