@@ -323,9 +323,9 @@ metadata:
 
 test_plan:
   current_focus:
-  - "Bug: 405 on /api/students/enroll"
-  stuck_tasks:
-  - "Bug: 405 on /api/students/enroll"
+  - "MediaPipe Face Mesh Initialization"
+  - "Face Detection Error Analysis"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
