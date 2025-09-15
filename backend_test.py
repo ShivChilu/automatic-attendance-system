@@ -879,7 +879,7 @@ class AttendanceAPITester:
             internal_response = None
         
         # Test 2: External URL (smarttrack-5.preview.emergentagent.com)
-        external_url = f"{self.base_url}/api/enrollment/students"
+        external_url = f"{self.base_url}/enrollment/students"
         print(f"   Testing external URL: {external_url}")
         
         try:
