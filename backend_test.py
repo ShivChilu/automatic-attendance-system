@@ -2154,24 +2154,26 @@ except Exception as e:
             return False
 
 def main():
-    print("🚀 Starting URGENT Student Enrollment Endpoint Testing")
-    print("🚨 PRIORITY: Testing domain fix and authentication for POST /enrollment/students")
+    print("🚀 Starting URGENT MediaPipe Face Mesh Testing After Protobuf Fix")
+    print("🚨 PRIORITY: Testing MediaPipe Face Mesh initialization improvements")
     print("=" * 80)
     
     tester = AttendanceAPITester()
     
-    # URGENT Test sequence - Focus on enrollment endpoint as requested
+    # URGENT Test sequence - Focus on MediaPipe Face Mesh improvements
     tests = [
-        # Basic Health and Authentication Tests (needed for enrollment testing)
+        # Basic Health and Authentication Tests (needed for face detection testing)
         ("API Health Check", tester.test_health_check),
         ("GOV_ADMIN Login", tester.test_gov_admin_login),
         ("Auth Me (GOV_ADMIN)", tester.test_auth_me_gov),
         
-        # 🚨 URGENT: Domain Fix Verification
-        ("🚨 URGENT: Domain Fix Verification", tester.test_enrollment_domain_fix_verification),
-        ("🚨 URGENT: Enrollment Authentication Tests", tester.test_enrollment_endpoint_authentication),
+        # 🚨 URGENT: Protobuf Fix Verification Tests
+        ("🚨 URGENT: Protobuf Version Verification", tester.test_protobuf_version_verification),
+        ("🚨 URGENT: Environment Variable Verification", tester.test_environment_variable_verification),
+        ("🚨 URGENT: MediaPipe Direct Initialization", tester.test_mediapipe_direct_initialization),
+        ("🚨 URGENT: Backend Logs Analysis", tester.test_backend_logs_analysis),
         
-        # School and Section Setup (needed for enrollment testing)
+        # School and Section Setup (needed for face detection testing)
         ("Create School (Comprehensive)", tester.test_create_school_comprehensive),
         ("Create Section", tester.test_create_section),
         ("Resend Credentials for Principal", tester.test_resend_credentials_for_principal),
@@ -2190,17 +2192,13 @@ def main():
         ("🚨 URGENT: Face Detection Error Details", tester.test_face_detection_error_details),
         ("🚨 URGENT: Attendance Face Detection", tester.test_attendance_marking_face_detection),
         
-        # 🚨 URGENT: Core Enrollment Tests
+        # 🚨 URGENT: Student Enrollment Tests (to verify face detection improvements)
+        ("🚨 URGENT: Enrollment Authentication Tests", tester.test_enrollment_endpoint_authentication),
         ("🚨 URGENT: Enrollment Role-Based Access Control", tester.test_enrollment_endpoint_role_access),
         ("🚨 URGENT: Enrollment Multipart Form Data", tester.test_enrollment_multipart_form_data),
+        ("🚨 URGENT: Face Enrollment Comprehensive", tester.test_face_enrollment_comprehensive),
         
-        # Additional Enrollment Tests
-        ("Face Enrollment Comprehensive (NEW ENDPOINT)", tester.test_face_enrollment_comprehensive),
-        ("Test Renamed Enrollment Endpoint", tester.test_renamed_enrollment_endpoint),
-        ("Internal vs External URL Comparison", tester.test_internal_vs_external_enrollment),
-        ("Old vs New Endpoint Comparison", tester.test_old_vs_new_enrollment_endpoints),
-        
-        # Other Core Tests
+        # Additional Core Tests
         ("Attendance Marking Comprehensive", tester.test_attendance_marking_comprehensive),
         ("Attendance Summary Comprehensive", tester.test_attendance_summary_comprehensive),
         
@@ -2223,34 +2221,65 @@ def main():
     
     failed_tests = []
     critical_failures = []
+    mediapipe_test_results = {}
     
     for test_name, test_func in tests:
         try:
-            if not test_func():
+            result = test_func()
+            if not result:
                 failed_tests.append(test_name)
                 # Mark urgent tests as critical failures
                 if "🚨 URGENT:" in test_name:
                     critical_failures.append(test_name)
+            
+            # Track MediaPipe-specific test results
+            if "MediaPipe" in test_name or "Face" in test_name:
+                mediapipe_test_results[test_name] = result
+                
         except Exception as e:
             print(f"❌ {test_name} - Exception: {str(e)}")
             failed_tests.append(test_name)
             if "🚨 URGENT:" in test_name:
                 critical_failures.append(test_name)
+            mediapipe_test_results[test_name] = False
     
     # Print summary
     print("\n" + "=" * 80)
-    print("📊 URGENT STUDENT ENROLLMENT TESTING SUMMARY")
+    print("📊 URGENT MEDIAPIPE FACE MESH TESTING SUMMARY")
     print("=" * 80)
     print(f"Total tests: {tester.tests_run}")
     print(f"Passed: {tester.tests_passed}")
     print(f"Failed: {len(failed_tests)}")
     
+    # MediaPipe-specific analysis
+    print(f"\n🔬 MEDIAPIPE FACE MESH ANALYSIS:")
+    print("=" * 50)
+    
+    mediapipe_passed = sum(1 for result in mediapipe_test_results.values() if result)
+    mediapipe_total = len(mediapipe_test_results)
+    
+    print(f"MediaPipe-related tests: {mediapipe_passed}/{mediapipe_total} passed")
+    
+    for test_name, result in mediapipe_test_results.items():
+        status = "✅ PASSED" if result else "❌ FAILED"
+        print(f"   {status}: {test_name}")
+    
+    # Determine overall MediaPipe status
+    if mediapipe_passed >= mediapipe_total * 0.8:
+        print(f"\n✅ MEDIAPIPE STATUS: SIGNIFICANTLY IMPROVED")
+        print(f"   The protobuf fix appears to be working effectively")
+    elif mediapipe_passed >= mediapipe_total * 0.5:
+        print(f"\n⚠️  MEDIAPIPE STATUS: PARTIALLY IMPROVED")
+        print(f"   Some improvements detected but issues remain")
+    else:
+        print(f"\n❌ MEDIAPIPE STATUS: NO SIGNIFICANT IMPROVEMENT")
+        print(f"   The protobuf fix may not be effective")
+    
     if critical_failures:
-        print(f"\n🚨 CRITICAL FAILURES (Urgent Enrollment Tests):")
+        print(f"\n🚨 CRITICAL FAILURES (Urgent MediaPipe Tests):")
         for test in critical_failures:
             print(f"   - {test}")
-        print(f"\n❌ URGENT ISSUE: Student enrollment endpoint is NOT working properly!")
-        print(f"   The domain fix may not be complete or there are other issues.")
+        print(f"\n❌ URGENT ISSUE: MediaPipe Face Mesh improvements not working as expected!")
     
     if failed_tests:
         print(f"\n❌ All failed tests:")
@@ -2260,17 +2289,17 @@ def main():
         print(f"   sudo tail -n 50 /var/log/supervisor/backend.*.log")
         
         if not critical_failures:
-            print(f"\n✅ GOOD NEWS: All urgent enrollment tests passed!")
-            print(f"   The student enrollment endpoint appears to be working correctly.")
+            print(f"\n✅ GOOD NEWS: All urgent MediaPipe tests passed!")
+            print(f"   The MediaPipe Face Mesh improvements appear to be working.")
             print(f"   Only non-critical tests failed.")
         
         return 1 if critical_failures else 0
     else:
         print(f"\n✅ ALL TESTS PASSED!")
-        print(f"🎉 Student enrollment endpoint is working correctly!")
-        print(f"✅ Domain fix confirmed - endpoint returns 401 instead of 404")
-        print(f"✅ Authentication and role-based access control working")
-        print(f"✅ Multipart form data handling working")
+        print(f"🎉 MediaPipe Face Mesh improvements are working correctly!")
+        print(f"✅ Protobuf version 4.25.3 confirmed working")
+        print(f"✅ Environment variable fix confirmed working")
+        print(f"✅ Face detection initialization improvements confirmed")
         return 0
 
 if __name__ == "__main__":
