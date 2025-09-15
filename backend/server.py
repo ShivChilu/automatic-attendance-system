@@ -620,6 +620,11 @@ async def enroll_student(
 async def test_route():
     return {"message": "Test route works", "routes_registered": True}
 
+# Simple test endpoint to verify route registration
+@api.get("/route-test")
+async def simple_route_test():
+    return {"message": "Route registration working", "path": "/route-test"}
+
 # Debug route for students
 @api.get("/students-debug")
 async def debug_students():
