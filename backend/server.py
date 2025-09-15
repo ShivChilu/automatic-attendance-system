@@ -429,6 +429,11 @@ async def me(current_user: dict = Depends(get_current_user)):
         created_at=current_user["created_at"],
     )
 
+# TEMP: Testing route registration issue
+@api.get("/temp-students-test")
+async def temp_students_test():
+    return {"message": "Temp students test works", "location": "after auth routes"}
+
 # Schools
 @api.post("/schools", response_model=School)
 async def create_school(payload: SchoolCreate, _: dict = Depends(require_roles('GOV_ADMIN'))):
