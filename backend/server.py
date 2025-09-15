@@ -582,16 +582,19 @@ async def enroll_student(
     if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN') and sec.get("school_id") != current.get("school_id"):
         raise HTTPException(status_code=403, detail="Not your school section")
 
-    # Process images to embeddings
+    # Process images to embeddings using MediaPipe Face Mesh + MobileFaceNet
     embeddings: List[List[float]] = []
     for f in images[:5]:
         data = await f.read()
-        face, err = await _detect_and_crop_face(data)
+        face, err = await _detect_and_crop_face_mesh(data)
         if face is None:
+            logger.warning(f"Face detection failed for image: {err}")
             continue
-        emb, e2 = _embed_face_with_deepface(face)
+        emb, e2 = await _embed_face_with_mobilefacenet(face)
         if emb:
             embeddings.append(emb)
+        else:
+            logger.warning(f"Face embedding failed: {e2}")
     if len(embeddings) < 1:
         raise HTTPException(status_code=400, detail="No face embeddings could be extracted")
 
