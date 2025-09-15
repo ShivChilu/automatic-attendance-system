@@ -333,6 +333,8 @@ def require_roles(*roles: Role):
 @api.get("/")
 async def api_root():
     return {"message": "API ok"}
+    # remove unused variable
+
 
 @api.post("/status", response_model=StatusCheck)
 async def create_status_check(input: StatusCheckCreate):
