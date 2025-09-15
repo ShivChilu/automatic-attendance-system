@@ -1668,7 +1668,7 @@ class AttendanceAPITester:
         print(f"\n🚨 URGENT: Verifying Domain Fix for Student Enrollment...")
         
         # Test the specific domain mentioned in the review request
-        correct_domain_url = "https://313ab390-493d-43ac-a33c-fbd713fbd8e3.preview.emergentagent.com/enrollment/students"
+        correct_domain_url = "https://313ab390-493d-43ac-a33c-fbd713fbd8e3.preview.emergentagent.com/api/enrollment/students"
         
         print(f"   Testing correct domain: {correct_domain_url}")
         
