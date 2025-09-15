@@ -572,12 +572,17 @@ class AttendanceMarkResponse(BaseModel):
 @api.post("/attendance/mark", response_model=AttendanceMarkResponse)
 async def mark_attendance(
     image: UploadFile = File(...),
+    section_id: Optional[str] = Form(None),
     current: dict = Depends(require_roles('TEACHER')),
 ):
-    # Teacher must have section assigned
-    section_id = current.get("section_id")
-    if not section_id:
-        raise HTTPException(status_code=400, detail="Teacher has no section assigned")
+    # Determine section to mark against: provided or teacher's default
+    chosen_section = section_id or current.get("section_id")
+    if not chosen_section:
+        raise HTTPException(status_code=400, detail="No section specified and teacher has no default section")
+    # Validate section belongs to teacher's school
+    sec = await db.sections.find_one({"id": chosen_section})
+    if not sec or sec.get("school_id") != current.get("school_id"):
+        raise HTTPException(status_code=403, detail="Invalid section for this teacher")
 
     data = await image.read()
     face, err = await _detect_and_crop_face(data)
