@@ -677,6 +677,43 @@ class AttendanceAPITester:
             return True
         return False
 
+    def test_resend_credentials_for_coadmin(self):
+        """Test resending credentials for co-admin to set known password"""
+        if not hasattr(self, 'coadmin_email'):
+            print("❌ Skipping co-admin credential reset - no co-admin email available")
+            return False
+        
+        success, response = self.run_test(
+            "Resend Credentials for Co-Admin",
+            "POST",
+            "/users/resend-credentials",
+            200,
+            data={
+                "email": self.coadmin_email,
+                "temp_password": "Pass@123"
+            },
+            token=self.gov_token
+        )
+        return success and 'sent' in response
+
+    def test_coadmin_login(self):
+        """Test CO_ADMIN login with new password"""
+        if not hasattr(self, 'coadmin_email'):
+            print("❌ Skipping co-admin login - no co-admin email available")
+            return False
+        
+        success, response = self.run_test(
+            "CO_ADMIN Login",
+            "POST",
+            "/auth/login",
+            200,
+            data={"email": self.coadmin_email, "password": "Pass@123"}
+        )
+        if success and 'access_token' in response:
+            self.coadmin_token = response['access_token']
+            return True
+        return False
+
     def test_attendance_marking(self):
         """Test attendance marking with face image"""
         if not self.teacher_token:
