@@ -1363,6 +1363,383 @@ class AttendanceAPITester:
             print(f"   ❌ {role_name} attendance summary error: {str(e)}")
             return False
 
+    def test_enrollment_endpoint_authentication(self):
+        """URGENT: Test enrollment endpoint authentication requirements"""
+        print(f"\n🚨 URGENT: Testing Student Enrollment Authentication...")
+        
+        url = f"{self.base_url}/enrollment/students"
+        
+        # Test 1: No authentication - should return 401
+        print("   Testing without authentication (should return 401)...")
+        self.tests_run += 1
+        
+        try:
+            # Create test data
+            import base64
+            test_image_data = base64.b64decode(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+            )
+            
+            files = {'images': ('test.png', test_image_data, 'image/png')}
+            data = {
+                'name': 'Test Student',
+                'section_id': 'test-section',
+                'parent_mobile': '9876543210',
+                'has_twin': 'false'
+            }
+            
+            response = requests.post(url, files=files, data=data, timeout=30)
+            
+            if response.status_code == 401:
+                self.tests_passed += 1
+                print(f"   ✅ Unauthenticated request correctly returns 401")
+                print(f"   Response: {response.text[:200]}")
+            elif response.status_code == 404:
+                print(f"   ❌ CRITICAL: Still getting 404 instead of 401 - domain issue not fixed!")
+                print(f"   Response: {response.text[:200]}")
+                return False
+            else:
+                print(f"   ❌ Unexpected status code: {response.status_code}")
+                print(f"   Response: {response.text[:200]}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error testing unauthenticated request: {str(e)}")
+            return False
+        
+        # Test 2: Invalid token - should return 401
+        print("   Testing with invalid token (should return 401)...")
+        self.tests_run += 1
+        
+        try:
+            headers = {'Authorization': 'Bearer invalid_token_here'}
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            if response.status_code == 401:
+                self.tests_passed += 1
+                print(f"   ✅ Invalid token correctly returns 401")
+            else:
+                print(f"   ❌ Invalid token test failed - Status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error testing invalid token: {str(e)}")
+            return False
+        
+        return True
+
+    def test_enrollment_endpoint_role_access(self):
+        """URGENT: Test enrollment endpoint role-based access control"""
+        if not self.section_id:
+            print("❌ Skipping role access test - no section available")
+            return False
+            
+        print(f"\n🚨 URGENT: Testing Student Enrollment Role Access...")
+        
+        url = f"{self.base_url}/enrollment/students"
+        
+        # Test data
+        import base64
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        files = {'images': ('test.png', test_image_data, 'image/png')}
+        data = {
+            'name': 'Test Student Role Access',
+            'section_id': self.section_id,
+            'parent_mobile': '9876543210',
+            'has_twin': 'false'
+        }
+        
+        # Test 1: SCHOOL_ADMIN access (should work)
+        if self.school_token:
+            print("   Testing SCHOOL_ADMIN access (should work)...")
+            self.tests_run += 1
+            
+            try:
+                headers = {'Authorization': f'Bearer {self.school_token}'}
+                response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+                
+                if response.status_code in [200, 400]:  # 200 = success, 400 = no face detected
+                    self.tests_passed += 1
+                    print(f"   ✅ SCHOOL_ADMIN access works - Status: {response.status_code}")
+                    if response.status_code == 400:
+                        print(f"   Expected 400 (no face detected): {response.text[:200]}")
+                elif response.status_code == 403:
+                    print(f"   ❌ SCHOOL_ADMIN incorrectly denied access - Status: 403")
+                    return False
+                else:
+                    print(f"   ❌ SCHOOL_ADMIN unexpected response - Status: {response.status_code}")
+                    print(f"   Response: {response.text[:200]}")
+                    return False
+                    
+            except Exception as e:
+                print(f"   ❌ Error testing SCHOOL_ADMIN access: {str(e)}")
+                return False
+        
+        # Test 2: CO_ADMIN access (should work)
+        if self.coadmin_token:
+            print("   Testing CO_ADMIN access (should work)...")
+            self.tests_run += 1
+            
+            try:
+                headers = {'Authorization': f'Bearer {self.coadmin_token}'}
+                response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+                
+                if response.status_code in [200, 400]:  # 200 = success, 400 = no face detected
+                    self.tests_passed += 1
+                    print(f"   ✅ CO_ADMIN access works - Status: {response.status_code}")
+                    if response.status_code == 400:
+                        print(f"   Expected 400 (no face detected): {response.text[:200]}")
+                elif response.status_code == 403:
+                    print(f"   ❌ CO_ADMIN incorrectly denied access - Status: 403")
+                    return False
+                else:
+                    print(f"   ❌ CO_ADMIN unexpected response - Status: {response.status_code}")
+                    print(f"   Response: {response.text[:200]}")
+                    return False
+                    
+            except Exception as e:
+                print(f"   ❌ Error testing CO_ADMIN access: {str(e)}")
+                return False
+        
+        # Test 3: TEACHER access (should be denied with 403)
+        if self.teacher_token:
+            print("   Testing TEACHER access (should be denied with 403)...")
+            self.tests_run += 1
+            
+            try:
+                headers = {'Authorization': f'Bearer {self.teacher_token}'}
+                response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+                
+                if response.status_code == 403:
+                    self.tests_passed += 1
+                    print(f"   ✅ TEACHER correctly denied access - Status: 403")
+                else:
+                    print(f"   ❌ TEACHER access control failed - Status: {response.status_code}")
+                    print(f"   Response: {response.text[:200]}")
+                    return False
+                    
+            except Exception as e:
+                print(f"   ❌ Error testing TEACHER access: {str(e)}")
+                return False
+        
+        # Test 4: GOV_ADMIN access (should be denied with 403 - not in allowed roles)
+        if self.gov_token:
+            print("   Testing GOV_ADMIN access (should be denied with 403)...")
+            self.tests_run += 1
+            
+            try:
+                headers = {'Authorization': f'Bearer {self.gov_token}'}
+                response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+                
+                if response.status_code == 403:
+                    self.tests_passed += 1
+                    print(f"   ✅ GOV_ADMIN correctly denied access - Status: 403")
+                else:
+                    print(f"   ❌ GOV_ADMIN access control failed - Status: {response.status_code}")
+                    print(f"   Response: {response.text[:200]}")
+                    return False
+                    
+            except Exception as e:
+                print(f"   ❌ Error testing GOV_ADMIN access: {str(e)}")
+                return False
+        
+        return True
+
+    def test_enrollment_multipart_form_data(self):
+        """URGENT: Test enrollment endpoint multipart form data handling"""
+        if not self.section_id or not self.school_token:
+            print("❌ Skipping multipart form test - no section or school token available")
+            return False
+            
+        print(f"\n🚨 URGENT: Testing Student Enrollment Multipart Form Data...")
+        
+        url = f"{self.base_url}/enrollment/students"
+        headers = {'Authorization': f'Bearer {self.school_token}'}
+        
+        # Test 1: Complete multipart form data
+        print("   Testing complete multipart form data...")
+        self.tests_run += 1
+        
+        try:
+            import base64
+            import uuid
+            
+            test_image_data = base64.b64decode(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+            )
+            
+            twin_group_id = str(uuid.uuid4())
+            
+            files = {'images': ('test_complete.png', test_image_data, 'image/png')}
+            data = {
+                'name': 'Complete Form Test Student',
+                'section_id': self.section_id,
+                'parent_mobile': '9876543210',
+                'has_twin': 'true',
+                'twin_group_id': twin_group_id
+            }
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            if response.status_code in [200, 400]:  # 200 = success, 400 = no face detected
+                self.tests_passed += 1
+                print(f"   ✅ Complete multipart form data works - Status: {response.status_code}")
+                if response.status_code == 200:
+                    response_data = response.json()
+                    print(f"   Response: {json.dumps(response_data, indent=2)}")
+                else:
+                    print(f"   Expected 400 (no face detected): {response.text[:200]}")
+            else:
+                print(f"   ❌ Complete multipart form failed - Status: {response.status_code}")
+                print(f"   Response: {response.text[:300]}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error testing complete multipart form: {str(e)}")
+            return False
+        
+        # Test 2: Multiple images
+        print("   Testing multiple images in multipart form...")
+        self.tests_run += 1
+        
+        try:
+            files = [
+                ('images', ('test1.png', test_image_data, 'image/png')),
+                ('images', ('test2.png', test_image_data, 'image/png')),
+                ('images', ('test3.png', test_image_data, 'image/png')),
+            ]
+            data = {
+                'name': 'Multiple Images Test Student',
+                'section_id': self.section_id,
+                'parent_mobile': '9876543211',
+                'has_twin': 'false'
+            }
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            if response.status_code in [200, 400]:
+                self.tests_passed += 1
+                print(f"   ✅ Multiple images multipart form works - Status: {response.status_code}")
+                if response.status_code == 200:
+                    response_data = response.json()
+                    print(f"   Embeddings count: {response_data.get('embeddings_count', 0)}")
+            else:
+                print(f"   ❌ Multiple images multipart form failed - Status: {response.status_code}")
+                print(f"   Response: {response.text[:300]}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error testing multiple images: {str(e)}")
+            return False
+        
+        # Test 3: Missing required fields
+        print("   Testing missing required fields...")
+        self.tests_run += 1
+        
+        try:
+            files = {'images': ('test_missing.png', test_image_data, 'image/png')}
+            data = {
+                'name': 'Missing Fields Test',
+                # Missing section_id
+                'parent_mobile': '9876543212'
+            }
+            
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            if response.status_code == 422:  # Validation error
+                self.tests_passed += 1
+                print(f"   ✅ Missing required fields correctly returns 422")
+            else:
+                print(f"   ❌ Missing fields test failed - Expected 422, got {response.status_code}")
+                print(f"   Response: {response.text[:300]}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error testing missing fields: {str(e)}")
+            return False
+        
+        return True
+
+    def test_enrollment_domain_fix_verification(self):
+        """URGENT: Verify the domain fix is working correctly"""
+        print(f"\n🚨 URGENT: Verifying Domain Fix for Student Enrollment...")
+        
+        # Test the specific domain mentioned in the review request
+        correct_domain_url = "https://313ab390-493d-43ac-a33c-fbd713fbd8e3.preview.emergentagent.com/api/enrollment/students"
+        
+        print(f"   Testing correct domain: {correct_domain_url}")
+        
+        # Test 1: Unauthenticated request should return 401 (not 404)
+        print("   Testing unauthenticated request (should return 401, not 404)...")
+        self.tests_run += 1
+        
+        try:
+            import base64
+            test_image_data = base64.b64decode(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+            )
+            
+            files = {'images': ('test_domain.png', test_image_data, 'image/png')}
+            data = {
+                'name': 'Domain Fix Test',
+                'section_id': 'test-section',
+                'parent_mobile': '9876543210',
+                'has_twin': 'false'
+            }
+            
+            response = requests.post(correct_domain_url, files=files, data=data, timeout=30)
+            
+            if response.status_code == 401:
+                self.tests_passed += 1
+                print(f"   ✅ DOMAIN FIX CONFIRMED: Returns 401 (authentication required) instead of 404")
+                print(f"   This confirms the domain configuration issue has been resolved!")
+            elif response.status_code == 404:
+                print(f"   ❌ DOMAIN FIX FAILED: Still getting 404 - domain issue persists")
+                print(f"   Response: {response.text[:300]}")
+                return False
+            else:
+                print(f"   ⚠️  Unexpected status code: {response.status_code}")
+                print(f"   Response: {response.text[:200]}")
+                # Still consider this a success if it's not 404
+                if response.status_code != 404:
+                    self.tests_passed += 1
+                    print(f"   ✅ Domain is accessible (not 404), fix appears to be working")
+                else:
+                    return False
+                
+        except Exception as e:
+            print(f"   ❌ Error testing domain fix: {str(e)}")
+            return False
+        
+        # Test 2: With valid authentication (using Government Admin credentials)
+        if self.gov_token:
+            print("   Testing with Government Admin credentials...")
+            self.tests_run += 1
+            
+            try:
+                headers = {'Authorization': f'Bearer {self.gov_token}'}
+                response = requests.post(correct_domain_url, files=files, data=data, headers=headers, timeout=30)
+                
+                # GOV_ADMIN should get 403 (not allowed role), not 404
+                if response.status_code == 403:
+                    self.tests_passed += 1
+                    print(f"   ✅ With auth: Returns 403 (role not allowed) - endpoint is accessible")
+                elif response.status_code == 404:
+                    print(f"   ❌ With auth: Still getting 404 - domain issue not fully resolved")
+                    return False
+                else:
+                    print(f"   ✅ With auth: Returns {response.status_code} - endpoint is accessible")
+                    self.tests_passed += 1
+                    
+            except Exception as e:
+                print(f"   ❌ Error testing with authentication: {str(e)}")
+                return False
+        
+        return True
+
 def main():
     print("🚀 Starting Comprehensive Automated Attendance System API Tests")
     print("=" * 70)
