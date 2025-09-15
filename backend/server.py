@@ -505,6 +505,11 @@ class StudentEnrollResponse(BaseModel):
     parent_mobile: Optional[str] = None
     embeddings_count: int
 
+# Simple test enrollment endpoint
+@api.post("/students/test-enroll")
+async def test_enroll_student(name: str = Form(...)):
+    return {"message": f"Test enrollment for {name}"}
+
 @api.post("/students/enroll", response_model=StudentEnrollResponse)
 async def enroll_student(
     name: str = Form(...),
