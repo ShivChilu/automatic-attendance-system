@@ -388,7 +388,7 @@ class AttendanceAPITester:
             200,
             data={
                 "email": "chiluverushivaprasad01@gmail.com",
-                "temp_password": "NewTemp123"
+                "temp_password": "TempPass123"
             },
             token=self.gov_token
         )
