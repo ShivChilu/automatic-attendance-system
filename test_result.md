@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Automated Attendance System: Create environment files (.env) for backend and frontend, set up MongoDB database connection, and demonstrate the working application. Backend should connect to MongoDB Atlas and frontend should access the backend API."
+user_problem_statement: "School Face Recognition Attendance System: Replace existing face detection system with MediaPipe Face Mesh + MobileFaceNet (TFLite) for better performance and offline capability. Implement hybrid approach for real-time face recognition attendance marking in schools."
 
 backend:
   - task: "Environment Configuration"
