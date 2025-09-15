@@ -282,7 +282,10 @@ metadata:
   run_ui: true
 
 test_plan:
-  current_focus: []
+  current_focus:
+  - "Student Face Enrollment API"
+  - "Attendance Marking API"
+  - "Attendance Summary API"
   stuck_tasks: []
   test_all: true
   test_priority: "high_first"
