@@ -237,7 +237,7 @@ frontend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Implemented /api/students/enroll (multipart) using MediaPipe + DeepFace (ArcFace) to extract 3-5 embeddings and store with student. Roles: SCHOOL_ADMIN, CO_ADMIN."
+          comment: "UPDATED: Replaced MediaPipe Face Detection + DeepFace with MediaPipe Face Mesh + MobileFaceNet (TFLite) for better performance and offline capability. Implements hybrid approach for real-time face recognition."
 
   - task: "Bug: 405 on /api/students/enroll"
     implemented: true
