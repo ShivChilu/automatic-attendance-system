@@ -27,6 +27,7 @@ export default function TeacherScan({ me }) {
       if (!section) { setStatus("Select a section first"); return; }
       const fd = new FormData();
       fd.append("image", blob, "scan.jpg");
+      if (section?.id) fd.append("section_id", section.id);
       const res = await api.post("/attendance/mark", fd, { headers: { "Content-Type": "multipart/form-data" } });
       setStatus(res.data.status || "");
       await loadSummary(section.id);
