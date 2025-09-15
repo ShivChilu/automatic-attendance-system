@@ -778,6 +778,16 @@ def main():
         # Email Integration Tests
         ("Resend Credentials", tester.test_resend_credentials),
         
+        # Face Enrollment and Attendance Tests
+        ("Resend Credentials for Principal", tester.test_resend_credentials_for_principal),
+        ("SCHOOL_ADMIN Login (New Password)", tester.test_school_admin_login_with_new_password),
+        ("Student Face Enrollment", tester.test_student_face_enrollment),
+        ("Create Teacher with Section", tester.test_create_teacher_with_section),
+        ("Resend Credentials for Teacher", tester.test_resend_credentials_for_teacher),
+        ("TEACHER Login", tester.test_teacher_login),
+        ("Attendance Marking", tester.test_attendance_marking),
+        ("Attendance Summary", tester.test_attendance_summary),
+        
         # Security and Error Handling Tests
         ("Unauthorized Access Test", tester.test_unauthorized_access),
         ("Role-based Access Control", tester.test_role_based_access_control),
