@@ -631,16 +631,6 @@ async def attendance_summary(section_id: str, date: Optional[str] = None, curren
     items = [AttendanceSummaryItem(student_id=s['id'], name=s['name'], present=s['id'] in present_ids) for s in students]
     return AttendanceSummary(section_id=section_id, date=date, total=len(students), present_count=len(present_ids), items=items)
 
-    if not sec:
-        raise HTTPException(status_code=404, detail="Section not found")
-    if current['role'] == 'SCHOOL_ADMIN' and sec.get('school_id') != current.get('school_id'):
-        raise HTTPException(status_code=403, detail="Not allowed")
-    upd = {k: v for k, v in payload.model_dump(exclude_none=True).items()}
-    if not upd:
-        raise HTTPException(status_code=400, detail="Nothing to update")
-    await db.sections.update_one({"id": section_id}, {"$set": upd})
-    sec = await db.sections.find_one({"id": section_id})  # noqa: F841
-    return Section(**sec)
 
 @api.delete("/sections/{section_id}")
 async def delete_section(section_id: str, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
