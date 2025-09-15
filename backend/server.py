@@ -1,3 +1,7 @@
+import os
+# Fix MediaPipe protobuf issues in container environment
+os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
+
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from fastapi.security import OAuth2PasswordBearer
 from starlette.middleware.cors import CORSMiddleware
