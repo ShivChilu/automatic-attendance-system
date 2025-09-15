@@ -515,6 +515,7 @@ async def enroll_student(
     images: List[UploadFile] = File(...),
     current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN')),
 ):
+    logger.info("Face enrollment endpoint called successfully!")  # Debug log
     # Validate section scope
     sec = await db.sections.find_one({"id": section_id})  # noqa: F841
     if not sec:
