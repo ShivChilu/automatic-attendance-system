@@ -1390,9 +1390,10 @@ def main():
         ("Resend Credentials for Teacher", tester.test_resend_credentials_for_teacher),
         ("TEACHER Login", tester.test_teacher_login),
         
-        # PRIORITY: Face Detection and Attendance Tests
-        ("🚨 PRIORITY: 405 Error Investigation", tester.test_405_error_investigation),
-        ("Face Enrollment Comprehensive", tester.test_face_enrollment_comprehensive),
+        # PRIORITY: Face Detection and Attendance Tests - RENAMED ENDPOINT
+        ("🚨 PRIORITY: Test Renamed Enrollment Endpoint", tester.test_renamed_enrollment_endpoint),
+        ("🚨 PRIORITY: Internal vs External URL Comparison", tester.test_internal_vs_external_enrollment),
+        ("🚨 PRIORITY: Old vs New Endpoint Comparison", tester.test_old_vs_new_enrollment_endpoints),
         ("Attendance Marking Comprehensive", tester.test_attendance_marking_comprehensive),
         ("Attendance Summary Comprehensive", tester.test_attendance_summary_comprehensive),
         
