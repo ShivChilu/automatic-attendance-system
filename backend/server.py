@@ -620,6 +620,11 @@ async def enroll_student(
 async def test_route():
     return {"message": "Test route works", "routes_registered": True}
 
+# Debug route for students
+@api.get("/students-debug")
+async def debug_students():
+    return {"message": "Students debug route works", "count": await db.students.count_documents({})}
+
 # Preflight support for CORS-sensitive routes
 @api.options("/students/enroll")
 async def options_students_enroll():
