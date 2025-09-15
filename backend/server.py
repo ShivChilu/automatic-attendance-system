@@ -466,7 +466,7 @@ async def create_section(payload: SectionCreate, current: dict = Depends(require
     return Section(**doc)
 
 @api.put("/sections/{section_id}", response_model=Section)
-async def update_section(section_id: str, payload: SectionUpdate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
+async def update_section(section_id: str, payload: SectionUpdate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):  # noqa: E501
     sec = await db.sections.find_one({"id": section_id})  # noqa: F841
 # ---------- Student Face Enrollment & Attendance ----------
 from fastapi import UploadFile, File, Form
