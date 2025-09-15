@@ -1156,7 +1156,7 @@ def main():
     
     tester = AttendanceAPITester()
     
-    # Test sequence - organized by functionality
+    # Test sequence - organized by functionality with focus on face detection
     tests = [
         # Basic Health and Authentication Tests
         ("API Health Check", tester.test_health_check),
@@ -1167,36 +1167,38 @@ def main():
         ("Create School (Basic)", tester.test_create_school),
         ("Create School (Comprehensive)", tester.test_create_school_comprehensive),
         ("List Schools", tester.test_list_schools),
-        ("Update School", tester.test_update_school),
         
         # Section Management Tests  
         ("Create Section", tester.test_create_section),
         ("List Sections", tester.test_list_sections),
-        ("Update Section", tester.test_update_section),
         
-        # Student Management Tests
-        ("Create Student", tester.test_create_student),
-        ("Update Student", tester.test_update_student),
-        
-        # User Management Tests
-        ("Create Teacher", tester.test_create_teacher),
+        # User Management Tests (needed for face detection testing)
         ("Create Co-Admin", tester.test_create_coadmin),
-        ("List Teachers", tester.test_list_teachers),
-        ("List Co-Admins", tester.test_list_coadmins),
-        ("Update User", tester.test_update_user),
-        
-        # Email Integration Tests
-        ("Resend Credentials", tester.test_resend_credentials),
-        
-        # Face Enrollment and Attendance Tests
         ("Resend Credentials for Principal", tester.test_resend_credentials_for_principal),
         ("SCHOOL_ADMIN Login (New Password)", tester.test_school_admin_login_with_new_password),
-        ("Student Face Enrollment", tester.test_student_face_enrollment),
         ("Create Teacher with Section", tester.test_create_teacher_with_section),
         ("Resend Credentials for Teacher", tester.test_resend_credentials_for_teacher),
         ("TEACHER Login", tester.test_teacher_login),
-        ("Attendance Marking", tester.test_attendance_marking),
-        ("Attendance Summary", tester.test_attendance_summary),
+        
+        # PRIORITY: Face Detection and Attendance Tests
+        ("🚨 PRIORITY: 405 Error Investigation", tester.test_405_error_investigation),
+        ("Face Enrollment Comprehensive", tester.test_face_enrollment_comprehensive),
+        ("Attendance Marking Comprehensive", tester.test_attendance_marking_comprehensive),
+        ("Attendance Summary Comprehensive", tester.test_attendance_summary_comprehensive),
+        
+        # Additional Tests
+        ("Update School", tester.test_update_school),
+        ("Update Section", tester.test_update_section),
+        ("Create Student", tester.test_create_student),
+        ("Update Student", tester.test_update_student),
+        ("Create Teacher", tester.test_create_teacher),
+        ("List Teachers", tester.test_list_teachers),
+        ("List Co-Admins", tester.test_list_coadmins),
+        ("Update User", tester.test_update_user),
+        ("List Students", tester.test_list_students),
+        
+        # Email Integration Tests
+        ("Resend Credentials", tester.test_resend_credentials),
         
         # Security and Error Handling Tests
         ("Unauthorized Access Test", tester.test_unauthorized_access),
