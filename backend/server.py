@@ -467,7 +467,18 @@ async def create_section(payload: SectionCreate, current: dict = Depends(require
 
 @api.put("/sections/{section_id}", response_model=Section)
 async def update_section(section_id: str, payload: SectionUpdate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):  # noqa: E501
-    sec = await db.sections.find_one({"id": section_id})  # noqa: F841
+    sec = await db.sections.find_one({"id": section_id})
+    if not sec:
+        raise HTTPException(status_code=404, detail="Section not found")
+    if current['role'] == 'SCHOOL_ADMIN' and sec.get('school_id') != current.get('school_id'):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    upd = {k: v for k, v in payload.model_dump(exclude_none=True).items()}
+    if not upd:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    await db.sections.update_one({"id": section_id}, {"$set": upd})
+    updated_sec = await db.sections.find_one({"id": section_id})
+    return Section(**updated_sec)
+
 # ---------- Student Face Enrollment & Attendance ----------
 from fastapi import UploadFile, File, Form
 # List students
