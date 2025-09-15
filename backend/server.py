@@ -593,7 +593,7 @@ async def mark_attendance(
         raise HTTPException(status_code=400, detail="No embedding generated")
 
     # Load students for this section only
-    students = await db.students.find({"section_id": section_id}).to_list(2000)
+    students = await db.students.find({"section_id": chosen_section}).to_list(2000)
     best_id = None
     best_name = None
     best_sim = -1.0
