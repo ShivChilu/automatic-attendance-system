@@ -550,7 +550,7 @@ class AttendanceAPITester:
         return False
 
     def test_student_face_enrollment(self):
-        """Test student face enrollment with multipart form data"""
+        """Test student face enrollment with multipart form data using NEW endpoint"""
         if not self.section_id or not self.school_token:
             print("❌ Skipping face enrollment - no section or school token available")
             return False
@@ -564,7 +564,8 @@ class AttendanceAPITester:
             'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
         )
         
-        url = f"{self.base_url}/students/enroll"
+        # Use the NEW enrollment endpoint
+        url = f"{self.base_url}/api/enrollment/students"
         headers = {'Authorization': f'Bearer {self.school_token}'}
         
         # Prepare multipart form data
@@ -579,7 +580,7 @@ class AttendanceAPITester:
         }
         
         self.tests_run += 1
-        print(f"\n🔍 Testing Student Face Enrollment...")
+        print(f"\n🔍 Testing Student Face Enrollment (NEW ENDPOINT)...")
         print(f"   URL: POST {url}")
         
         try:
