@@ -770,7 +770,7 @@ async def list_sections(school_id: Optional[str] = None, current: dict = Depends
     return [Section(**i) for i in items]
 
 # Students
-@api.post("/students", response_model=Student)
+@api.post("/students/create", response_model=Student)
 async def create_student(payload: StudentCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN'))):
     # Validate section belongs to current school if school admin/co-admin
     sec = await db.sections.find_one({"id": payload.section_id})
