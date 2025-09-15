@@ -15,7 +15,7 @@ import os
 class FaceRecognitionTester:
     def __init__(self):
         # Get backend URL from environment
-        self.base_url = "https://attendwise-3.preview.emergentagent.com/api"
+        self.base_url = "https://schooltrack-7.preview.emergentagent.com/api"
         self.gov_token = None
         self.school_token = None
         self.teacher_token = None
