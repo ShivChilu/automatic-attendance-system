@@ -625,6 +625,11 @@ async def test_route():
 async def debug_students():
     return {"message": "Students debug route works", "count": await db.students.count_documents({})}
 
+# Simple test endpoint to debug GET method
+@api.get("/students-test")
+async def test_students():
+    return {"message": "GET method works on /students-test"}
+
 # Preflight support for CORS-sensitive routes
 @api.options("/students/enroll")
 async def options_students_enroll():
