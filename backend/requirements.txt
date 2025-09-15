@@ -66,3 +66,7 @@ tzdata==2025.2
 urllib3==2.5.0
 uvicorn==0.25.0
 watchfiles==1.1.0
+
+opencv-python-headless==4.10.0.84
+mediapipe==0.10.18
+deepface==0.0.93
