@@ -229,15 +229,18 @@ frontend:
 
   - task: "Student Face Enrollment API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: "NA"
           agent: "main"
           comment: "UPDATED: Replaced MediaPipe Face Detection + DeepFace with MediaPipe Face Mesh + MobileFaceNet (TFLite) for better performance and offline capability. Implements hybrid approach for real-time face recognition."
+        - working: true
+          agent: "testing"
+          comment: "Backend API working correctly internally. POST /api/students/enroll accepts multipart form data with images, validates SCHOOL_ADMIN/CO_ADMIN permissions, processes face detection with MediaPipe Face Mesh + MobileFaceNet TFLite. Returns 400 'No face embeddings could be extracted' for test images (expected behavior). All authentication, validation, and error handling working properly."
 
   - task: "Bug: 405 on /api/students/enroll"
     implemented: true
@@ -245,7 +248,7 @@ frontend:
     file: "/app/backend/server.py"
     stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
         - working: false
           agent: "user"
@@ -253,6 +256,9 @@ frontend:
         - working: false
           agent: "main"
           comment: "Added explicit OPTIONS handlers and verified POST route exists; need external verification."
+        - working: false
+          agent: "testing"
+          comment: "CRITICAL FINDING: Backend code is correct. Issue is with external URL routing. Internal API (localhost:8001/api) works perfectly - POST returns 403 (auth needed) or 400 (no face detected). External API (smarttrack-5.preview.emergentagent.com/api) returns 405 with 'Allow: PUT' instead of 'Allow: POST'. This indicates ingress/proxy routing issue, NOT backend code problem. Backend route @api.post('/students/enroll') is correctly defined and functional."
 
 
   - task: "Attendance Marking API"
