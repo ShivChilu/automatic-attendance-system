@@ -649,6 +649,10 @@ async def attendance_summary(section_id: str, date: Optional[str] = None, curren
     return AttendanceSummary(section_id=section_id, date=date, total=len(students), present_count=len(present_ids), items=items)
 
 
+    # Additional indexes
+    await db.students.create_index("twin_group_id")
+    await db.attendance.create_index([("section_id", 1), ("date", 1), ("student_id", 1)], unique=True)
+
 @api.delete("/sections/{section_id}")
 async def delete_section(section_id: str, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
     sec = await db.sections.find_one({"id": section_id})  # noqa: F841
