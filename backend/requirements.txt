@@ -69,5 +69,4 @@ watchfiles==1.1.0
 
 opencv-python-headless==4.10.0.84
 mediapipe==0.10.18
-tensorflow==2.15.0
-tflite-runtime==2.15.0
+tensorflow-lite==2.14.0
