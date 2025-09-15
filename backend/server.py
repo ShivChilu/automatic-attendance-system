@@ -391,7 +391,7 @@ def require_roles(*roles: Role):
 # ---------- Routes ----------
 @api.get("/")
 async def api_root():
-    return {"message": "API ok"}
+    return {"message": "API ok", "debug": "root route working"}
     # remove unused variable
 
 
