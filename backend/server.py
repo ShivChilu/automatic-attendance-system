@@ -641,7 +641,7 @@ async def simple_students_test():
     return {"message": "Simple GET endpoint working", "method": "GET"}
 
 # Preflight support for CORS-sensitive routes
-@api.options("/students/enroll")
+@api.options("/enrollment/students")
 async def options_students_enroll():
     return {"ok": True}
 
