@@ -275,6 +275,10 @@ class AttendanceAPITester:
         )
         if success and response.get('role') == 'CO_ADMIN':
             self.coadmin_id = response.get('id')
+            # Store the email for later login
+            import time
+            timestamp = str(int(time.time()) + 2)
+            self.coadmin_email = f"priya.reddy.{timestamp}@testschool.edu.in"
             return True
         return False
 
