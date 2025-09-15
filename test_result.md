@@ -226,6 +226,55 @@ frontend:
           agent: "main"
           comment: "Different dashboards for GOV_ADMIN, SCHOOL_ADMIN, CO_ADMIN, TEACHER roles"
 
+
+  - task: "Student Face Enrollment API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Implemented /api/students/enroll (multipart) using MediaPipe + DeepFace (ArcFace) to extract 3-5 embeddings and store with student. Roles: SCHOOL_ADMIN, CO_ADMIN."
+
+  - task: "Attendance Marking API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Implemented /api/attendance/mark. TEACHER-only. Detects face, embeds, compares within teacher's section, 90% threshold, prevents duplicates, twin_conflict flag, creates attendance record."
+
+  - task: "Attendance Summary API"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Implemented /api/attendance/summary with counts and per-student present boolean for a section and date."
+
+  - task: "Students Listing API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "Implemented GET /api/students (scoped by role and section)."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
