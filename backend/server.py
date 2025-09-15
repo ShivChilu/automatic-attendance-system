@@ -616,7 +616,7 @@ async def mark_attendance(
     stu = await db.students.find_one({"id": best_id})
     if stu and stu.get("has_twin") and stu.get("twin_group_id"):
         # Another student in same twin group?
-        twin_count = await db.students.count_documents({"twin_group_id": stu["twin_group_id"], "section_id": section_id})
+        twin_count = await db.students.count_documents({"twin_group_id": stu["twin_group_id"], "section_id": chosen_section})
         if twin_count >= 2:
             twin_conflict = True
 
