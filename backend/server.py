@@ -894,6 +894,8 @@ async def on_startup():
     await db.schools.create_index("name")
     await db.sections.create_index("school_id")
     await db.students.create_index("section_id")
+    await db.students.create_index("twin_group_id")
+    await db.attendance.create_index([("section_id", 1), ("date", 1), ("student_id", 1)], unique=True)
 
     # Seed initial users/school if provided in env
     try:
