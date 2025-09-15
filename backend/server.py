@@ -505,53 +505,52 @@ class StudentEnrollResponse(BaseModel):
     parent_mobile: Optional[str] = None
     embeddings_count: int
 
-# TEMPORARILY DISABLED FOR DEBUGGING
-# @api.post("/students/enroll", response_model=StudentEnrollResponse)
-# async def enroll_student(
-#     name: str = Form(...),
-#     section_id: str = Form(...),
-#     parent_mobile: Optional[str] = Form(None),
-#     has_twin: bool = Form(False),
-#     twin_group_id: Optional[str] = Form(None),
-#     images: List[UploadFile] = File(...),
-#     current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN')),
-# ):
-#     # Validate section scope
-#     sec = await db.sections.find_one({"id": section_id})  # noqa: F841
-#     if not sec:
-#         raise HTTPException(status_code=404, detail="Section not found")
-#     if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN') and sec.get("school_id") != current.get("school_id"):
-#         raise HTTPException(status_code=403, detail="Not your school section")
-# 
-#     # Process images to embeddings
-#     embeddings: List[List[float]] = []
-#     for f in images[:5]:
-#         data = await f.read()
-#         face, err = await _detect_and_crop_face(data)
-#         if face is None:
-#             continue
-#         emb, e2 = _embed_face_with_deepface(face)
-#         if emb:
-#             embeddings.append(emb)
-#     if len(embeddings) < 1:
-#         raise HTTPException(status_code=400, detail="No face embeddings could be extracted")
-# 
-#     sid = str(uuid.uuid4())
-#     student_code = sid[:8]
-#     doc = {
-#         "id": sid,
-#         "name": name,
-#         "student_code": student_code,
-#         "roll_no": None,
-#         "section_id": section_id,
-#         "parent_mobile": parent_mobile,
-#         "has_twin": has_twin,
-#         "twin_group_id": twin_group_id,
-#         "embeddings": embeddings,
-#         "created_at": now_iso(),
-#     }
-#     await db.students.insert_one(doc)
-#     return StudentEnrollResponse(id=sid, name=name, section_id=section_id, parent_mobile=parent_mobile, embeddings_count=len(embeddings))
+@api.post("/students/enroll", response_model=StudentEnrollResponse)
+async def enroll_student(
+    name: str = Form(...),
+    section_id: str = Form(...),
+    parent_mobile: Optional[str] = Form(None),
+    has_twin: bool = Form(False),
+    twin_group_id: Optional[str] = Form(None),
+    images: List[UploadFile] = File(...),
+    current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN')),
+):
+    # Validate section scope
+    sec = await db.sections.find_one({"id": section_id})  # noqa: F841
+    if not sec:
+        raise HTTPException(status_code=404, detail="Section not found")
+    if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN') and sec.get("school_id") != current.get("school_id"):
+        raise HTTPException(status_code=403, detail="Not your school section")
+
+    # Process images to embeddings
+    embeddings: List[List[float]] = []
+    for f in images[:5]:
+        data = await f.read()
+        face, err = await _detect_and_crop_face(data)
+        if face is None:
+            continue
+        emb, e2 = _embed_face_with_deepface(face)
+        if emb:
+            embeddings.append(emb)
+    if len(embeddings) < 1:
+        raise HTTPException(status_code=400, detail="No face embeddings could be extracted")
+
+    sid = str(uuid.uuid4())
+    student_code = sid[:8]
+    doc = {
+        "id": sid,
+        "name": name,
+        "student_code": student_code,
+        "roll_no": None,
+        "section_id": section_id,
+        "parent_mobile": parent_mobile,
+        "has_twin": has_twin,
+        "twin_group_id": twin_group_id,
+        "embeddings": embeddings,
+        "created_at": now_iso(),
+    }
+    await db.students.insert_one(doc)
+    return StudentEnrollResponse(id=sid, name=name, section_id=section_id, parent_mobile=parent_mobile, embeddings_count=len(embeddings))
 
 # Test route to debug route registration
 @api.get("/test-route")
