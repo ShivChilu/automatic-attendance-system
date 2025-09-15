@@ -179,17 +179,38 @@ async def _ensure_face_mesh():
     global FACE_MESH
     if FACE_MESH is None:
         try:
+            # Clear any existing MediaPipe imports to avoid conflicts
+            import sys
+            mediapipe_modules = [module for module in sys.modules.keys() if 'mediapipe' in module]
+            for module in mediapipe_modules:
+                if module in sys.modules:
+                    del sys.modules[module]
+            
             import mediapipe as mp  # type: ignore
+            
+            # Initialize with minimal configuration to avoid container issues
             FACE_MESH = mp.solutions.face_mesh.FaceMesh(
                 static_image_mode=True,
                 max_num_faces=1,
-                refine_landmarks=True,
-                min_detection_confidence=0.5,
-                min_tracking_confidence=0.5
+                refine_landmarks=False,  # Disable to reduce complexity
+                min_detection_confidence=0.3,  # Lower threshold
+                min_tracking_confidence=0.3
             )
+            logger.info("MediaPipe Face Mesh initialized successfully")
         except Exception as e:
             logger.warning(f"MediaPipe Face Mesh not available or failed to initialize: {e}")
-            FACE_MESH = None
+            # Try alternative initialization
+            try:
+                import mediapipe as mp
+                FACE_MESH = mp.solutions.face_mesh.FaceMesh(
+                    static_image_mode=True,
+                    max_num_faces=1,
+                    min_detection_confidence=0.3
+                )
+                logger.info("MediaPipe Face Mesh initialized with minimal config")
+            except Exception as e2:
+                logger.error(f"MediaPipe Face Mesh completely failed to initialize: {e2}")
+                FACE_MESH = None
     return FACE_MESH
 
 async def _ensure_mobilefacenet_model():
