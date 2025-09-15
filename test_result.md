@@ -246,9 +246,9 @@ frontend:
     implemented: true
     working: false
     file: "/app/backend/server.py"
-    stuck_count: 1
+    stuck_count: 2
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: false
           agent: "user"
@@ -258,7 +258,7 @@ frontend:
           comment: "Added explicit OPTIONS handlers and verified POST route exists; need external verification."
         - working: false
           agent: "testing"
-          comment: "CRITICAL FINDING: Backend code is correct. Issue is with external URL routing. Internal API (localhost:8001/api) works perfectly - POST returns 403 (auth needed) or 400 (no face detected). External API (smarttrack-5.preview.emergentagent.com/api) returns 405 with 'Allow: PUT' instead of 'Allow: POST'. This indicates ingress/proxy routing issue, NOT backend code problem. Backend route @api.post('/students/enroll') is correctly defined and functional."
+          comment: "CRITICAL FINDING: Backend works perfectly internally (localhost:8001/api). External URL (smarttrack-5.preview.emergentagent.com/api) returns 405 with 'Allow: PUT' instead of 'Allow: POST'. This is ingress/proxy routing issue, not backend code issue."
 
 
   - task: "Attendance Marking API"
