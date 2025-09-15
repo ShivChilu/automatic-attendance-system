@@ -649,6 +649,10 @@ async def delete_section(section_id: str, current: dict = Depends(require_roles(
     await db.students.delete_many({"section_id": section_id})
     await db.sections.delete_one({"id": section_id})
     return {"deleted": True}
+    await db.students.create_index("twin_group_id")
+    await db.students.create_index("section_id")
+    await db.attendance.create_index([("section_id", 1), ("date", 1), ("student_id", 1)], unique=True)
+
 
 @api.get("/sections", response_model=List[Section])
 async def list_sections(school_id: Optional[str] = None, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN', 'TEACHER'))):
