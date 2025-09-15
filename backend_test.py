@@ -775,7 +775,7 @@ class AttendanceAPITester:
         print(f"\n🔍 Testing Renamed Enrollment Endpoint /api/enrollment/students...")
         
         # Test 1: Test new endpoint with external URL
-        new_url = f"{self.base_url}/api/enrollment/students"
+        new_url = f"{self.base_url}/enrollment/students"
         headers = {'Authorization': f'Bearer {self.school_token}'}
         
         print(f"   Testing new endpoint: {new_url}")
