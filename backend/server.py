@@ -466,6 +466,168 @@ async def create_section(payload: SectionCreate, current: dict = Depends(require
 @api.put("/sections/{section_id}", response_model=Section)
 async def update_section(section_id: str, payload: SectionUpdate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
     sec = await db.sections.find_one({"id": section_id})
+# ---------- Student Face Enrollment & Attendance ----------
+from fastapi import UploadFile, File, Form
+
+class StudentEnrollResponse(BaseModel):
+    id: str
+    name: str
+    section_id: str
+    parent_mobile: Optional[str] = None
+    embeddings_count: int
+
+@api.post("/students/enroll", response_model=StudentEnrollResponse)
+async def enroll_student(
+    name: str = Form(...),
+    section_id: str = Form(...),
+    parent_mobile: Optional[str] = Form(None),
+    has_twin: bool = Form(False),
+    twin_group_id: Optional[str] = Form(None),
+    images: List[UploadFile] = File(...),
+    current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN')),
+):
+    # Validate section scope
+    sec = await db.sections.find_one({"id": section_id})
+    if not sec:
+        raise HTTPException(status_code=404, detail="Section not found")
+    if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN') and sec.get("school_id") != current.get("school_id"):
+        raise HTTPException(status_code=403, detail="Not your school section")
+
+    # Process images to embeddings
+    embeddings: List[List[float]] = []
+    for f in images[:5]:
+        data = await f.read()
+        face, err = await _detect_and_crop_face(data)
+        if face is None:
+            continue
+        emb, e2 = _embed_face_with_deepface(face)
+        if emb:
+            embeddings.append(emb)
+    if len(embeddings) < 1:
+        raise HTTPException(status_code=400, detail="No face embeddings could be extracted")
+
+    sid = str(uuid.uuid4())
+    student_code = sid[:8]
+    doc = {
+        "id": sid,
+        "name": name,
+        "student_code": student_code,
+        "roll_no": None,
+        "section_id": section_id,
+        "parent_mobile": parent_mobile,
+        "has_twin": has_twin,
+        "twin_group_id": twin_group_id,
+        "embeddings": embeddings,
+        "created_at": now_iso(),
+    }
+    await db.students.insert_one(doc)
+    return StudentEnrollResponse(id=sid, name=name, section_id=section_id, parent_mobile=parent_mobile, embeddings_count=len(embeddings))
+
+class AttendanceMarkResponse(BaseModel):
+    status: str
+    student_id: Optional[str] = None
+    student_name: Optional[str] = None
+    similarity: Optional[float] = None
+    twin_conflict: bool = False
+
+@api.post("/attendance/mark", response_model=AttendanceMarkResponse)
+async def mark_attendance(
+    image: UploadFile = File(...),
+    current: dict = Depends(require_roles('TEACHER')),
+):
+    # Teacher must have section assigned
+    section_id = current.get("section_id")
+    if not section_id:
+        raise HTTPException(status_code=400, detail="Teacher has no section assigned")
+
+    data = await image.read()
+    face, err = await _detect_and_crop_face(data)
+    if face is None:
+        raise HTTPException(status_code=400, detail="No face detected")
+    emb, e2 = _embed_face_with_deepface(face)
+    if not emb:
+        raise HTTPException(status_code=400, detail="No embedding generated")
+
+    # Load students for this section only
+    students = await db.students.find({"section_id": section_id}).to_list(2000)
+    best_id = None
+    best_name = None
+    best_sim = -1.0
+    twin_conflict = False
+
+    for s in students:
+        s_embs = s.get("embeddings", [])
+        sims = [_cosine_sim(emb, e) for e in s_embs if isinstance(e, list)]
+        sim = max(sims) if sims else -1.0
+        if sim > best_sim:
+            best_sim = sim
+            best_id = s["id"]
+            best_name = s["name"]
+
+    threshold = 0.90  # 90%
+    if best_sim < threshold:
+        return AttendanceMarkResponse(status="Not a student from this section")
+
+    # Check twin
+    stu = await db.students.find_one({"id": best_id})
+    if stu and stu.get("has_twin") and stu.get("twin_group_id"):
+        # Another student in same twin group?
+        twin_count = await db.students.count_documents({"twin_group_id": stu["twin_group_id"], "section_id": section_id})
+        if twin_count >= 2:
+            twin_conflict = True
+
+    # Prevent duplicate for today
+    today = datetime.now(timezone.utc).date()
+    start = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
+    end = start + timedelta(days=1)
+    existing = await db.attendance.find_one({"student_id": best_id, "section_id": section_id, "timestamp": {"$gte": start, "$lt": end}})
+    if existing:
+        return AttendanceMarkResponse(status="Already marked present", student_id=best_id, student_name=best_name, similarity=best_sim, twin_conflict=twin_conflict)
+
+    rec = {
+        "id": str(uuid.uuid4()),
+        "date": start.date().isoformat(),
+        "section_id": section_id,
+        "student_id": best_id,
+        "status": "Present",
+        "teacher_id": current["id"],
+        "timestamp": now_iso(),
+    }
+    await db.attendance.insert_one(rec)
+    return AttendanceMarkResponse(status=f"{best_name} is marked present, scan next student", student_id=best_id, student_name=best_name, similarity=best_sim, twin_conflict=twin_conflict)
+
+class AttendanceSummaryItem(BaseModel):
+    student_id: str
+    name: str
+    present: bool
+
+class AttendanceSummary(BaseModel):
+    section_id: str
+    date: str
+    total: int
+    present_count: int
+    items: List[AttendanceSummaryItem]
+
+@api.get("/attendance/summary", response_model=AttendanceSummary)
+async def attendance_summary(section_id: str, date: Optional[str] = None, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER'))):
+    # Scope check for school admins and teachers
+    sec = await db.sections.find_one({"id": section_id})
+    if not sec:
+        raise HTTPException(status_code=404, detail="Section not found")
+    if current['role'] in ('SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER') and sec.get('school_id') != current.get('school_id'):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    if date is None:
+        today = datetime.now(timezone.utc).date()
+        date = today.isoformat()
+
+    students = await db.students.find({"section_id": section_id}).to_list(5000)
+    ids = [s['id'] for s in students]
+    atts = await db.attendance.find({"section_id": section_id, "date": date}).to_list(10000)
+    present_ids = {a['student_id'] for a in atts if a.get('status') == 'Present'}
+    items = [AttendanceSummaryItem(student_id=s['id'], name=s['name'], present=s['id'] in present_ids) for s in students]
+    return AttendanceSummary(section_id=section_id, date=date, total=len(students), present_count=len(present_ids), items=items)
+
     if not sec:
         raise HTTPException(status_code=404, detail="Section not found")
     if current['role'] == 'SCHOOL_ADMIN' and sec.get('school_id') != current.get('school_id'):
