@@ -480,7 +480,6 @@ async def update_section(section_id: str, payload: SectionUpdate, current: dict 
     return Section(**updated_sec)
 
 # ---------- Student Face Enrollment & Attendance ----------
-from fastapi import UploadFile, File, Form
 # List students
 @api.get("/students", response_model=List[Student])
 async def list_students(section_id: Optional[str] = None, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER'))):
