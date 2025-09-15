@@ -470,6 +470,26 @@ async def update_section(section_id: str, payload: SectionUpdate, current: dict 
     sec = await db.sections.find_one({"id": section_id})  # noqa: F841
 # ---------- Student Face Enrollment & Attendance ----------
 from fastapi import UploadFile, File, Form
+# List students
+class StudentListResponse(BaseModel):
+    students: List[Student]
+
+@api.get("/students", response_model=StudentListResponse)
+async def list_students(section_id: Optional[str] = None, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER'))):
+    query: Dict[str, Any] = {}
+    if section_id:
+        query["section_id"] = section_id
+    if current['role'] in ('SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER') and current.get('school_id'):
+        # Ensure sections belong to current school
+        school_sections = await db.sections.find({"school_id": current.get('school_id')}).to_list(10000)
+        allowed_sec_ids = {s['id'] for s in school_sections}
+        if section_id and section_id not in allowed_sec_ids:
+            raise HTTPException(status_code=403, detail="Not allowed for this section")
+        if not section_id:
+            query["section_id"] = {"$in": list(allowed_sec_ids)}
+    items = await db.students.find(query).to_list(10000)
+    return {"students": [Student(**i) for i in items]}
+
 
 class StudentEnrollResponse(BaseModel):
     id: str
