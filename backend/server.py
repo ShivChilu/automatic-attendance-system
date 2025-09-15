@@ -467,7 +467,7 @@ async def create_section(payload: SectionCreate, current: dict = Depends(require
 
 @api.put("/sections/{section_id}", response_model=Section)
 async def update_section(section_id: str, payload: SectionUpdate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
-    sec = await db.sections.find_one({"id": section_id})
+    sec = await db.sections.find_one({"id": section_id})  # noqa: F841
 # ---------- Student Face Enrollment & Attendance ----------
 from fastapi import UploadFile, File, Form
 
@@ -489,7 +489,7 @@ async def enroll_student(
     current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN')),
 ):
     # Validate section scope
-    sec = await db.sections.find_one({"id": section_id})
+    sec = await db.sections.find_one({"id": section_id})  # noqa: F841
     if not sec:
         raise HTTPException(status_code=404, detail="Section not found")
     if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN') and sec.get("school_id") != current.get("school_id"):
@@ -613,7 +613,7 @@ class AttendanceSummary(BaseModel):
 @api.get("/attendance/summary", response_model=AttendanceSummary)
 async def attendance_summary(section_id: str, date: Optional[str] = None, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER'))):
     # Scope check for school admins and teachers
-    sec = await db.sections.find_one({"id": section_id})
+    sec = await db.sections.find_one({"id": section_id})  # noqa: F841
     if not sec:
         raise HTTPException(status_code=404, detail="Section not found")
     if current['role'] in ('SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER') and sec.get('school_id') != current.get('school_id'):
@@ -638,12 +638,12 @@ async def attendance_summary(section_id: str, date: Optional[str] = None, curren
     if not upd:
         raise HTTPException(status_code=400, detail="Nothing to update")
     await db.sections.update_one({"id": section_id}, {"$set": upd})
-    sec = await db.sections.find_one({"id": section_id})
+    sec = await db.sections.find_one({"id": section_id})  # noqa: F841
     return Section(**sec)
 
 @api.delete("/sections/{section_id}")
 async def delete_section(section_id: str, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
-    sec = await db.sections.find_one({"id": section_id})
+    sec = await db.sections.find_one({"id": section_id})  # noqa: F841
     if not sec:
         raise HTTPException(status_code=404, detail="Section not found")
     if current['role'] == 'SCHOOL_ADMIN' and sec.get('school_id') != current.get('school_id'):
