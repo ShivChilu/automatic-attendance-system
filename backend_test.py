@@ -1169,14 +1169,15 @@ class AttendanceAPITester:
             return False
 
     def _test_invalid_section(self):
-        """Test enrollment with invalid section"""
+        """Test enrollment with invalid section using NEW endpoint"""
         import base64
         
         test_image_data = base64.b64decode(
             'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
         )
         
-        url = f"{self.base_url}/students/enroll"
+        # Use the NEW enrollment endpoint
+        url = f"{self.base_url}/api/enrollment/students"
         headers = {'Authorization': f'Bearer {self.school_token}'}
         
         files = {
