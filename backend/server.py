@@ -171,6 +171,80 @@ class Student(BaseModel):
     created_at: datetime
 
 # ---------- Utility functions ----------
+# ---------- Face utilities (lazy imports to keep server lightweight when not used) ----------
+FACE_DETECTOR = None  # initialized on first use
+
+async def _ensure_face_detector():
+    global FACE_DETECTOR
+    if FACE_DETECTOR is None:
+        try:
+            import mediapipe as mp  # type: ignore
+            FACE_DETECTOR = mp.solutions.face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5)
+        except Exception as e:
+            logger.warning(f"MediaPipe not available or failed to initialize: {e}")
+            FACE_DETECTOR = None
+    return FACE_DETECTOR
+
+async def _detect_and_crop_face(image_bytes: bytes):
+    try:
+        import numpy as np  # already in requirements
+        import cv2  # will be provided by opencv-python-headless
+        detector = await _ensure_face_detector()
+        if detector is None:
+            return None, "mediapipe_not_available"
+        npimg = np.frombuffer(image_bytes, np.uint8)
+        img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+        if img is None:
+            return None, "decode_failed"
+        rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        results = FACE_DETECTOR.process(rgb)  # type: ignore[attr-defined]
+        if results and results.detections:
+            bbox = results.detections[0].location_data.relative_bounding_box
+            h, w, _ = img.shape
+            x1 = max(int(bbox.xmin * w), 0)
+            y1 = max(int(bbox.ymin * h), 0)
+            x2 = min(x1 + int(bbox.width * w), w)
+            y2 = min(y1 + int(bbox.height * h), h)
+            if x2 <= x1 or y2 <= y1:
+                return None, "invalid_bbox"
+            face = img[y1:y2, x1:x2]
+            return face, None
+        return None, "no_face"
+    except Exception as e:
+        logger.exception("Face detection error")
+        return None, str(e)
+
+def _embed_face_with_deepface(face_bgr):
+    try:
+        from deepface import DeepFace  # lazy import to avoid startup failure if not installed
+        reps = DeepFace.represent(face_bgr, model_name="ArcFace", enforce_detection=False)
+        if isinstance(reps, list) and len(reps) > 0:
+            emb = reps[0].get("embedding")
+            # Convert numpy to list if needed
+            try:
+                import numpy as np  # noqa: F401
+                if hasattr(emb, "tolist"):
+                    emb = emb.tolist()
+            except Exception:
+                pass
+            if isinstance(emb, list):
+                return emb, None
+        return None, "no_embedding"
+    except Exception as e:
+        logger.warning(f"DeepFace not available or error: {e}")
+        return None, "deepface_error"
+
+def _cosine_sim(a: List[float], b: List[float]) -> float:
+    import math
+    if not a or not b or len(a) != len(b):
+        return -1.0
+    dot = sum(x*y for x, y in zip(a, b))
+    na = math.sqrt(sum(x*x for x in a))
+    nb = math.sqrt(sum(y*y for y in b))
+    if na == 0 or nb == 0:
+        return -1.0
+    return dot / (na * nb)
+
 
 def now_iso():
     return datetime.now(timezone.utc)
