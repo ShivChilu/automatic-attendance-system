@@ -624,7 +624,7 @@ async def mark_attendance(
     today = datetime.now(timezone.utc).date()
     start = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
     end = start + timedelta(days=1)
-    existing = await db.attendance.find_one({"student_id": best_id, "section_id": section_id, "timestamp": {"$gte": start, "$lt": end}})
+    existing = await db.attendance.find_one({"student_id": best_id, "section_id": chosen_section, "timestamp": {"$gte": start, "$lt": end}})
     if existing:
         return AttendanceMarkResponse(status="Already marked present", student_id=best_id, student_name=best_name, similarity=best_sim, twin_conflict=twin_conflict)
 
