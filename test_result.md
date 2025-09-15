@@ -239,6 +239,22 @@ frontend:
           agent: "main"
           comment: "Implemented /api/students/enroll (multipart) using MediaPipe + DeepFace (ArcFace) to extract 3-5 embeddings and store with student. Roles: SCHOOL_ADMIN, CO_ADMIN."
 
+  - task: "Bug: 405 on /api/students/enroll"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+          agent: "user"
+          comment: "Principal cannot enroll; pressing Enroll Student shows 'Method Not Allowed'"
+        - working: false
+          agent: "main"
+          comment: "Added explicit OPTIONS handlers and verified POST route exists; need external verification."
+
+
   - task: "Attendance Marking API"
     implemented: true
     working: "NA"
