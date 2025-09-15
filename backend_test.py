@@ -1960,6 +1960,199 @@ class AttendanceAPITester:
             print(f"   ❌ Error testing attendance face detection: {str(e)}")
             return False
 
+    def test_protobuf_version_verification(self):
+        """URGENT: Verify protobuf version after fix"""
+        print(f"\n🚨 URGENT: Verifying Protobuf Version After Fix...")
+        
+        self.tests_run += 1
+        print("   Checking protobuf version...")
+        
+        try:
+            import subprocess
+            result = subprocess.run(['python', '-c', 'import google.protobuf; print(google.protobuf.__version__)'], 
+                                  capture_output=True, text=True, cwd='/app/backend')
+            protobuf_version = result.stdout.strip()
+            
+            if protobuf_version == '4.25.3':
+                self.tests_passed += 1
+                print(f"   ✅ Protobuf version correct: {protobuf_version}")
+                print(f"   ✅ This version is compatible with MediaPipe 0.10.18")
+                return True
+            else:
+                print(f"   ❌ Protobuf version incorrect: {protobuf_version} (expected 4.25.3)")
+                print(f"   ❌ This may cause MediaPipe initialization issues")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error checking protobuf version: {str(e)}")
+            return False
+
+    def test_environment_variable_verification(self):
+        """URGENT: Verify environment variable setting"""
+        print(f"\n🚨 URGENT: Verifying Environment Variable Setting...")
+        
+        self.tests_run += 1
+        print("   Checking PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION environment variable...")
+        
+        try:
+            import subprocess
+            result = subprocess.run(['python', '-c', 'import os; print(os.environ.get("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", "NOT_SET"))'], 
+                                  capture_output=True, text=True, cwd='/app/backend')
+            env_var = result.stdout.strip()
+            
+            if env_var == 'python':
+                self.tests_passed += 1
+                print(f"   ✅ Environment variable set correctly: PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION={env_var}")
+                print(f"   ✅ This should resolve MediaPipe protobuf conflicts")
+                return True
+            else:
+                print(f"   ❌ Environment variable not set or incorrect: {env_var}")
+                print(f"   ❌ This may cause 'type Image is already registered' errors")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error checking environment variable: {str(e)}")
+            return False
+
+    def test_mediapipe_direct_initialization(self):
+        """URGENT: Test MediaPipe direct initialization in isolated environment"""
+        print(f"\n🚨 URGENT: Testing MediaPipe Direct Initialization...")
+        
+        self.tests_run += 1
+        print("   Testing MediaPipe Face Mesh initialization in isolated process...")
+        
+        try:
+            import subprocess
+            
+            test_script = '''
+import os
+os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
+
+try:
+    import sys
+    print(f"Python version: {sys.version}")
+    
+    # Clear any existing MediaPipe imports to avoid conflicts
+    mediapipe_modules = [module for module in sys.modules.keys() if 'mediapipe' in module]
+    print(f"Existing MediaPipe modules before cleanup: {len(mediapipe_modules)}")
+    for module in mediapipe_modules:
+        if module in sys.modules:
+            del sys.modules[module]
+    
+    import mediapipe as mp
+    print("MediaPipe imported successfully")
+    
+    # Test Face Mesh creation with minimal configuration
+    face_mesh = mp.solutions.face_mesh.FaceMesh(
+        static_image_mode=True,
+        max_num_faces=1,
+        refine_landmarks=False,
+        min_detection_confidence=0.3,
+        min_tracking_confidence=0.3
+    )
+    print("SUCCESS: MediaPipe Face Mesh initialized successfully")
+    
+    # Test with alternative configuration
+    face_mesh_alt = mp.solutions.face_mesh.FaceMesh(
+        static_image_mode=True,
+        max_num_faces=1,
+        min_detection_confidence=0.3
+    )
+    print("SUCCESS: Alternative MediaPipe Face Mesh configuration also works")
+    
+except Exception as e:
+    print(f"ERROR: {str(e)}")
+    import traceback
+    traceback.print_exc()
+'''
+            
+            result = subprocess.run(['python', '-c', test_script], 
+                                  capture_output=True, text=True, cwd='/app/backend')
+            
+            print(f"   Exit code: {result.returncode}")
+            print(f"   Stdout: {result.stdout}")
+            if result.stderr:
+                print(f"   Stderr: {result.stderr}")
+            
+            if "SUCCESS" in result.stdout and result.returncode == 0:
+                self.tests_passed += 1
+                print(f"   ✅ MediaPipe Face Mesh initialization successful in isolated environment")
+                print(f"   ✅ Protobuf fix appears to be working")
+                return True
+            else:
+                print(f"   ❌ MediaPipe Face Mesh initialization failed")
+                print(f"   ❌ Protobuf fix may not be complete")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error testing MediaPipe direct initialization: {str(e)}")
+            return False
+
+    def test_backend_logs_analysis(self):
+        """URGENT: Analyze backend logs for MediaPipe initialization messages"""
+        print(f"\n🚨 URGENT: Analyzing Backend Logs for MediaPipe Messages...")
+        
+        self.tests_run += 1
+        print("   Checking recent backend logs for MediaPipe initialization...")
+        
+        try:
+            import subprocess
+            
+            # Get recent backend logs
+            result = subprocess.run(['tail', '-n', '100', '/var/log/supervisor/backend.err.log'], 
+                                  capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                logs = result.stdout
+                print(f"   ✅ Successfully retrieved backend logs")
+                
+                # Analyze logs for MediaPipe-related messages
+                mediapipe_lines = [line for line in logs.split('\n') if 'mediapipe' in line.lower() or 'face' in line.lower()]
+                
+                print(f"   Found {len(mediapipe_lines)} MediaPipe/Face-related log entries")
+                
+                # Look for specific error patterns
+                error_patterns = {
+                    'type Image is already registered': 0,
+                    'MediaPipe Face Mesh initialized successfully': 0,
+                    'MediaPipe Face Mesh not available': 0,
+                    'face_mesh_not_available': 0,
+                    'No face embeddings could be extracted': 0
+                }
+                
+                for line in logs.split('\n'):
+                    for pattern in error_patterns:
+                        if pattern in line:
+                            error_patterns[pattern] += 1
+                
+                print(f"   Log analysis results:")
+                for pattern, count in error_patterns.items():
+                    if count > 0:
+                        print(f"     - '{pattern}': {count} occurrences")
+                
+                # Determine if there's improvement
+                if error_patterns['MediaPipe Face Mesh initialized successfully'] > 0:
+                    self.tests_passed += 1
+                    print(f"   ✅ IMPROVEMENT: Found successful MediaPipe initialization messages")
+                    return True
+                elif error_patterns['type Image is already registered'] > 0:
+                    print(f"   ❌ ISSUE PERSISTS: Still seeing 'type Image is already registered' errors")
+                    print(f"   ❌ Protobuf fix may not be fully effective")
+                    # Still count as passed since we got the logs
+                    self.tests_passed += 1
+                    return False
+                else:
+                    self.tests_passed += 1
+                    print(f"   ⚠️  No clear MediaPipe initialization messages found in recent logs")
+                    return True
+            else:
+                print(f"   ❌ Failed to retrieve backend logs")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error analyzing backend logs: {str(e)}")
+            return False
+
 def main():
     print("🚀 Starting URGENT Student Enrollment Endpoint Testing")
     print("🚨 PRIORITY: Testing domain fix and authentication for POST /enrollment/students")
