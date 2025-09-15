@@ -565,7 +565,7 @@ class AttendanceAPITester:
         )
         
         # Use the NEW enrollment endpoint
-        url = f"{self.base_url}/api/enrollment/students"
+        url = f"{self.base_url}/enrollment/students"
         headers = {'Authorization': f'Bearer {self.school_token}'}
         
         # Prepare multipart form data
@@ -767,12 +767,12 @@ class AttendanceAPITester:
             return False
 
     def test_renamed_enrollment_endpoint(self):
-        """Test the renamed student enrollment endpoint /api/enrollment/students"""
+        """Test the renamed student enrollment endpoint /enrollment/students"""
         if not self.section_id or not self.school_token:
             print("❌ Skipping renamed enrollment test - no section or school token available")
             return False
 
-        print(f"\n🔍 Testing Renamed Enrollment Endpoint /api/enrollment/students...")
+        print(f"\n🔍 Testing Renamed Enrollment Endpoint /enrollment/students...")
         
         # Test 1: Test new endpoint with external URL
         new_url = f"{self.base_url}/enrollment/students"
@@ -861,7 +861,7 @@ class AttendanceAPITester:
         headers = {'Authorization': f'Bearer {self.school_token}'}
         
         # Test 1: Internal URL (localhost:8001)
-        internal_url = "http://localhost:8001/api/enrollment/students"
+        internal_url = "http://localhost:8001/enrollment/students"
         print(f"   Testing internal URL: {internal_url}")
         
         self.tests_run += 1
@@ -921,7 +921,7 @@ class AttendanceAPITester:
         return False
 
     def test_old_vs_new_enrollment_endpoints(self):
-        """Test old /api/students/enroll vs new /api/enrollment/students endpoints"""
+        """Test old /api/students/enroll vs new /enrollment/students endpoints"""
         if not self.section_id or not self.school_token:
             print("❌ Skipping old vs new endpoint test - no section or school token available")
             return False
@@ -1032,7 +1032,7 @@ class AttendanceAPITester:
         )
         
         # Use the NEW enrollment endpoint
-        url = f"{self.base_url}/api/enrollment/students"
+        url = f"{self.base_url}/enrollment/students"
         headers = {'Authorization': f'Bearer {token}'}
         
         files = {
@@ -1094,7 +1094,7 @@ class AttendanceAPITester:
         )
         
         # Use the NEW enrollment endpoint
-        url = f"{self.base_url}/api/enrollment/students"
+        url = f"{self.base_url}/enrollment/students"
         headers = {'Authorization': f'Bearer {self.school_token}'}
         
         files = [
@@ -1136,7 +1136,7 @@ class AttendanceAPITester:
         )
         
         # Use the NEW enrollment endpoint
-        url = f"{self.base_url}/api/enrollment/students"
+        url = f"{self.base_url}/enrollment/students"
         headers = {'Authorization': f'Bearer {self.school_token}'}
         
         twin_group_id = str(uuid.uuid4())
@@ -1178,7 +1178,7 @@ class AttendanceAPITester:
         )
         
         # Use the NEW enrollment endpoint
-        url = f"{self.base_url}/api/enrollment/students"
+        url = f"{self.base_url}/enrollment/students"
         headers = {'Authorization': f'Bearer {self.school_token}'}
         
         files = {
@@ -1668,7 +1668,7 @@ class AttendanceAPITester:
         print(f"\n🚨 URGENT: Verifying Domain Fix for Student Enrollment...")
         
         # Test the specific domain mentioned in the review request
-        correct_domain_url = "https://313ab390-493d-43ac-a33c-fbd713fbd8e3.preview.emergentagent.com/api/enrollment/students"
+        correct_domain_url = "https://313ab390-493d-43ac-a33c-fbd713fbd8e3.preview.emergentagent.com/enrollment/students"
         
         print(f"   Testing correct domain: {correct_domain_url}")
         
@@ -1742,7 +1742,7 @@ class AttendanceAPITester:
 
 def main():
     print("🚀 Starting URGENT Student Enrollment Endpoint Testing")
-    print("🚨 PRIORITY: Testing domain fix and authentication for POST /api/enrollment/students")
+    print("🚨 PRIORITY: Testing domain fix and authentication for POST /enrollment/students")
     print("=" * 80)
     
     tester = AttendanceAPITester()
