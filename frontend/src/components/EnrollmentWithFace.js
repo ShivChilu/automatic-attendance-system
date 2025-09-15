@@ -52,7 +52,7 @@ export default function EnrollmentWithFace({ sections = [] }) {
       fd.append("has_twin", hasTwin ? "true" : "false");
       if (twinGroupId) fd.append("twin_group_id", twinGroupId);
       shots.forEach((s, i) => fd.append("images", s.blob, `shot_${i+1}.jpg`));
-      const res = await api.post("/students/enroll", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      const res = await api.post("/students/enroll", fd);
       setMessage(`Enrolled ${res.data.name}. Embeddings: ${res.data.embeddings_count}`);
       setName(""); setParentMobile(""); setHasTwin(false); setTwinGroupId(""); setShots([]);
     } catch (err) {
