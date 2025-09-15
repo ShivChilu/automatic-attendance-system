@@ -311,9 +311,7 @@ metadata:
 
 test_plan:
   current_focus:
-  - "Student Face Enrollment API"
-  - "Attendance Marking API"
-  - "Attendance Summary API"
+  - "Bug: 405 on /api/students/enroll"
   stuck_tasks:
   - "Bug: 405 on /api/students/enroll"
   test_all: false
