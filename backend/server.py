@@ -553,6 +553,11 @@ async def enroll_student(
     await db.students.insert_one(doc)
     return StudentEnrollResponse(id=sid, name=name, section_id=section_id, parent_mobile=parent_mobile, embeddings_count=len(embeddings))
 
+# Test route to debug route registration
+@api.get("/test-route")
+async def test_route():
+    return {"message": "Test route works", "routes_registered": True}
+
 # Preflight support for CORS-sensitive routes
 @api.options("/students/enroll")
 async def options_students_enroll():
