@@ -652,12 +652,12 @@ async def mark_attendance(
         raise HTTPException(status_code=403, detail="Invalid section for this teacher")
 
     data = await image.read()
-    face, err = await _detect_and_crop_face(data)
+    face, err = await _detect_and_crop_face_mesh(data)
     if face is None:
-        raise HTTPException(status_code=400, detail="No face detected")
-    emb, e2 = _embed_face_with_deepface(face)
+        raise HTTPException(status_code=400, detail=f"No face detected: {err}")
+    emb, e2 = await _embed_face_with_mobilefacenet(face)
     if not emb:
-        raise HTTPException(status_code=400, detail="No embedding generated")
+        raise HTTPException(status_code=400, detail=f"No embedding generated: {e2}")
 
     # Load students for this section only
     students = await db.students.find({"section_id": chosen_section}).to_list(2000)
