@@ -969,7 +969,7 @@ class AttendanceAPITester:
             old_response = None
         
         # Test 2: New endpoint (should work)
-        new_url = f"{self.base_url}/api/enrollment/students"
+        new_url = f"{self.base_url}/enrollment/students"
         print(f"   Testing new endpoint: {new_url}")
         
         try:
