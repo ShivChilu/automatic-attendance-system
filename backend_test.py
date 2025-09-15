@@ -1399,6 +1399,7 @@ def main():
         ("🚨 PRIORITY: Test Renamed Enrollment Endpoint", tester.test_renamed_enrollment_endpoint),
         ("🚨 PRIORITY: Internal vs External URL Comparison", tester.test_internal_vs_external_enrollment),
         ("🚨 PRIORITY: Old vs New Endpoint Comparison", tester.test_old_vs_new_enrollment_endpoints),
+        ("Face Enrollment Comprehensive (NEW ENDPOINT)", tester.test_face_enrollment_comprehensive),
         ("Attendance Marking Comprehensive", tester.test_attendance_marking_comprehensive),
         ("Attendance Summary Comprehensive", tester.test_attendance_summary_comprehensive),
         
