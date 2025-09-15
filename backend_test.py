@@ -526,9 +526,11 @@ class AttendanceAPITester:
 
     def test_school_admin_login_with_new_password(self):
         """Test SCHOOL_ADMIN login with new password"""
-        import time
-        timestamp = str(int(time.time()) - 1)  # Use timestamp from comprehensive school creation
-        principal_email = f"sunita.mehta.{timestamp}@testschool.edu.in"
+        if not hasattr(self, 'principal_email'):
+            print("❌ Skipping school admin login - no principal email stored")
+            return False
+        
+        principal_email = self.principal_email
         
         success, response = self.run_test(
             "SCHOOL_ADMIN Login (New Password)",
