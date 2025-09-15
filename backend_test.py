@@ -1992,6 +1992,11 @@ def main():
         ("Resend Credentials for Teacher", tester.test_resend_credentials_for_teacher),
         ("TEACHER Login", tester.test_teacher_login),
         
+        # 🚨 URGENT: MediaPipe Face Detection Tests
+        ("🚨 URGENT: MediaPipe Face Mesh Initialization", tester.test_mediapipe_face_mesh_initialization),
+        ("🚨 URGENT: Face Detection Error Details", tester.test_face_detection_error_details),
+        ("🚨 URGENT: Attendance Face Detection", tester.test_attendance_marking_face_detection),
+        
         # 🚨 URGENT: Core Enrollment Tests
         ("🚨 URGENT: Enrollment Role-Based Access Control", tester.test_enrollment_endpoint_role_access),
         ("🚨 URGENT: Enrollment Multipart Form Data", tester.test_enrollment_multipart_form_data),
