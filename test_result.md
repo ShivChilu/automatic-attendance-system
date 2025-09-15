@@ -265,7 +265,7 @@ frontend:
     status_history:
         - working: "NA"
           agent: "main"
-          comment: "Implemented /api/attendance/mark. TEACHER-only. Detects face, embeds, compares within teacher's section, 90% threshold, prevents duplicates, twin_conflict flag, creates attendance record."
+          comment: "UPDATED: Replaced face detection with MediaPipe Face Mesh + MobileFaceNet (TFLite). TEACHER-only. Detects face using mesh landmarks, generates embeddings with TFLite model, compares within teacher's section, 90% threshold, prevents duplicates."
 
   - task: "Attendance Summary API"
     implemented: true
