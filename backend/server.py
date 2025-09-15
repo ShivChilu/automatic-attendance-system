@@ -631,7 +631,7 @@ async def mark_attendance(
     rec = {
         "id": str(uuid.uuid4()),
         "date": start.date().isoformat(),
-        "section_id": section_id,
+        "section_id": chosen_section,
         "student_id": best_id,
         "status": "Present",
         "teacher_id": current["id"],
