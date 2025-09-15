@@ -1022,7 +1022,7 @@ class AttendanceAPITester:
         return self._test_face_enrollment_edge_cases()
 
     def _test_face_enrollment_with_token(self, token, role_name):
-        """Helper method to test face enrollment with specific token"""
+        """Helper method to test face enrollment with specific token using NEW endpoint"""
         import base64
         
         # Create a simple test image
@@ -1030,7 +1030,8 @@ class AttendanceAPITester:
             'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
         )
         
-        url = f"{self.base_url}/students/enroll"
+        # Use the NEW enrollment endpoint
+        url = f"{self.base_url}/api/enrollment/students"
         headers = {'Authorization': f'Bearer {token}'}
         
         files = {
