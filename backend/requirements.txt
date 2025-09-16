@@ -72,3 +72,4 @@ opencv-python-headless==4.10.0.84
 mediapipe==0.10.18
 tflite-runtime==2.14.0
 protobuf==4.25.3
+matplotlib==3.7.2
