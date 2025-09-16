@@ -607,11 +607,12 @@ body::before {
 .card_title {
   font-size: var(--font-size-xl);
   font-weight: 700;
-  color: var(--gray-900);
+  color: var(--gray-900) !important;
   margin-bottom: var(--space-6);
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 .card_title::before {
@@ -621,6 +622,143 @@ body::before {
   border-radius: var(--radius-sm);
   background: var(--gradient-primary);
   flex-shrink: 0;
+}
+
+/* Form Labels with Better Contrast */
+.form_label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--gray-900) !important;
+  margin-bottom: var(--space-1);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Table Headers with Better Contrast */
+.table_wrap th {
+  background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+  color: var(--gray-900) !important;
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--space-4) var(--space-4);
+  text-align: left;
+  border-bottom: 2px solid var(--gray-200);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Table Cells with Better Contrast */
+.table_wrap td {
+  padding: var(--space-4) var(--space-4);
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--gray-900) !important;
+  font-size: var(--font-size-sm);
+  vertical-align: middle;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Hero Section Text with Shadow */
+.hero-title {
+  color: white !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8) !important;
+  font-weight: 800 !important;
+}
+
+.hero-subtitle {
+  color: rgba(255, 255, 255, 0.95) !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
+  font-weight: 500 !important;
+}
+
+/* Stats Card Text */
+.stats_number {
+  font-size: var(--font-size-4xl);
+  font-weight: 800;
+  color: var(--primary-600) !important;
+  margin-bottom: var(--space-2);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.stats_label {
+  font-size: var(--font-size-sm);
+  color: var(--gray-700) !important;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* User Box Text */
+.user_email {
+  font-size: var(--font-size-sm);
+  color: var(--gray-900) !important;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.user_role {
+  font-size: var(--font-size-xs);
+  color: var(--primary-700) !important;
+  font-weight: 600;
+  background: var(--primary-50);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--primary-100);
+  text-shadow: none;
+}
+
+/* General Text Improvements */
+.text-gray-900 { 
+  color: var(--gray-900) !important; 
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+.text-gray-800 { 
+  color: var(--gray-800) !important; 
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+.text-gray-700 { 
+  color: var(--gray-700) !important; 
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+.text-gray-600 { 
+  color: var(--gray-600) !important; 
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+.text-gray-500 { 
+  color: var(--gray-500) !important; 
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Muted text with better contrast */
+.muted { 
+  color: var(--gray-600) !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Note styling with better readability */ 
+.note {
+  color: var(--gray-700) !important;
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--primary-500);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Auth title with better contrast */
+.auth_title {
+  font-size: var(--font-size-3xl);
+  font-weight: 800;
+  color: var(--gray-900) !important;
+  margin-bottom: var(--space-8);
+  text-align: center;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
 }
 
 /* Stats Cards */
