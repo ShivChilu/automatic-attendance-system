@@ -60,14 +60,101 @@ export default function CameraCapture({ facingMode = "user", onToggleFacing, onC
 
   return (
     <div className="camera_box">
-      <div className="video_wrap">
+      <div className="video_wrap" style={{ position: 'relative', overflow: 'hidden' }}>
         <video ref={videoRef} playsInline muted autoPlay className="video" />
+        {!ready && (
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            fontSize: '1.2rem',
+            fontWeight: '600'
+          }}>
+            <div className="text-center">
+              <div className="text-4xl mb-2">📸</div>
+              <div>Initializing Camera...</div>
+            </div>
+          </div>
+        )}
+        {ready && (
+          <div style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            background: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            padding: '6px 12px',
+            borderRadius: '20px',
+            fontSize: '12px',
+            fontWeight: '500'
+          }}>
+            🔴 LIVE
+          </div>
+        )}
       </div>
       <div className="camera_actions">
-        <button type="button" className="btn_secondary" onClick={onToggleFacing}>Switch to {facingMode === "user" ? "Back" : "Front"} Camera</button>
-        <button type="button" className="btn_primary" onClick={doCapture} disabled={!ready}>{captureLabel}</button>
+        <button 
+          type="button" 
+          className="btn_secondary" 
+          onClick={onToggleFacing}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 16px',
+            borderRadius: '12px',
+            border: '2px solid #e5e7eb',
+            background: 'white',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          🔄 Switch to {facingMode === "user" ? "📷 Back" : "🤳 Front"} Camera
+        </button>
+        <button 
+          type="button" 
+          className={ready ? "btn_primary" : "btn_secondary"} 
+          onClick={doCapture} 
+          disabled={!ready}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 24px',
+            borderRadius: '12px',
+            fontWeight: '600',
+            fontSize: '16px',
+            minWidth: '160px',
+            justifyContent: 'center',
+            opacity: ready ? 1 : 0.6,
+            transform: ready ? 'scale(1)' : 'scale(0.95)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          {ready ? captureLabel : "⏳ Preparing..."}
+        </button>
       </div>
-      {error && <div className="error_text" style={{ marginTop: 8 }}>{error}</div>}
+      {error && (
+        <div className="error_text" style={{ 
+          marginTop: '12px',
+          padding: '12px 16px',
+          background: '#fef2f2',
+          border: '1px solid #fecaca',
+          borderRadius: '12px',
+          color: '#dc2626',
+          fontSize: '14px',
+          fontWeight: '500',
+          textAlign: 'center'
+        }}>
+          ⚠️ {error}
+        </div>
+      )}
     </div>
   );
 }
