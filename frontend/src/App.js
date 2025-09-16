@@ -9,6 +9,7 @@ import { Label } from "./components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select";
 import EnrollmentWithFace from "./components/EnrollmentWithFace";
 import TeacherScan from "./components/TeacherScan";
+import Sidebar from "./components/Sidebar";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -47,11 +48,11 @@ function useMySchool(enabled) {
 function StatsCard({ title, value, icon, gradient, trend }) {
   return (
     <div className="card narrow animate-scale-in">
-      <div className="stats_card" style={{ background: gradient }}>
-        <div className="stats_number">{value}</div>
-        <div className="stats_label">{title}</div>
+      <div className="stats_card" style={{ background: 'white', color: '#1f2937' }}>
+        <div className="stats_number" style={{ color: '#1e40af' }}>{value}</div>
+        <div className="stats_label" style={{ color: '#6b7280' }}>{title}</div>
         {trend && (
-          <div className="text-xs text-gray-600 mt-2">
+          <div className="text-xs mt-2" style={{ color: '#6b7280' }}>
             {trend > 0 ? '↗️' : '↘️'} {Math.abs(trend)}% from last month
           </div>
         )}
@@ -64,7 +65,7 @@ function StatsCard({ title, value, icon, gradient, trend }) {
 function HeroSection({ title, subtitle, backgroundImage }) {
   return (
     <div className="card wide animate-fade-in" style={{ 
-      backgroundImage: `linear-gradient(rgba(102, 126, 234, 0.8), rgba(118, 75, 162, 0.8)), url(${backgroundImage})`,
+      backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4)), url(${backgroundImage})`,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       color: 'white',
@@ -73,10 +74,15 @@ function HeroSection({ title, subtitle, backgroundImage }) {
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
-      textAlign: 'center'
+      textAlign: 'center',
+      textShadow: '0 2px 4px rgba(0,0,0,0.8)'
     }}>
-      <h1 className="text-4xl font-extrabold mb-4">{title}</h1>
-      <p className="text-xl font-medium opacity-90">{subtitle}</p>
+      <h1 className="text-4xl font-extrabold mb-4" style={{ color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
+        {title}
+      </h1>
+      <p className="text-xl font-medium" style={{ color: 'rgba(255,255,255,0.95)', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+        {subtitle}
+      </p>
     </div>
   );
 }
@@ -107,7 +113,7 @@ function Login({ onLoggedIn }) {
         <h2 className="auth_title">Welcome Back</h2>
         <form onSubmit={submit}>
           <div className="form_row">
-            <Label htmlFor="email" className="form_label">Email Address</Label>
+            <Label htmlFor="email" className="form_label" style={{ color: '#374151' }}>Email Address</Label>
             <Input 
               id="email" 
               type="email" 
@@ -119,7 +125,7 @@ function Login({ onLoggedIn }) {
             />
           </div>
           <div className="form_row">
-            <Label htmlFor="password" className="form_label">Password</Label>
+            <Label htmlFor="password" className="form_label" style={{ color: '#374151' }}>Password</Label>
             <Input 
               id="password" 
               type="password" 
@@ -143,7 +149,7 @@ function Login({ onLoggedIn }) {
   );
 }
 
-function GovAdmin({ me }) {
+function GovAdmin({ me, currentSection, onSectionChange }) {
   const [form, setForm] = useState({ name: "", address_line1: "", city: "", state: "", pincode: "", principal_name: "", principal_email: "", principal_phone: "" });
   const [message, setMessage] = useState("");
   const [schools, setSchools] = useState([]);
@@ -198,183 +204,199 @@ function GovAdmin({ me }) {
     await api.delete(`/schools/${id}`); loadSchools();
   };
 
-  return (
-    <div className="dash_grid">
-      <HeroSection 
-        title="Government Education Dashboard"
-        subtitle="Manage schools, monitor attendance, and oversee educational infrastructure"
-        backgroundImage="https://images.unsplash.com/photo-1519389950473-47ba0277781c"
-      />
-      
-      {/* Statistics Overview */}
-      <StatsCard title="Total Schools" value={stats.totalSchools} gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" trend={8} />
-      <StatsCard title="Total Students" value={stats.totalStudents.toLocaleString()} gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" trend={12} />
-      <StatsCard title="Total Teachers" value={stats.totalTeachers.toLocaleString()} gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" trend={5} />
-
-      <div className="card wide animate-slide-in">
-        <h3 className="card_title">🏫 Create New School</h3>
-        <form onSubmit={createSchool}>
-          <div className="form_row">
-            <Label className="form_label">School Name</Label>
-            <Input 
-              value={form.name} 
-              onChange={(e) => setForm({ ...form, name: e.target.value })} 
-              className="form_input"
-              placeholder="Enter school name"
-              required 
-            />
-          </div>
-          <div className="form_row">
-            <Label className="form_label">Address</Label>
-            <Input 
-              value={form.address_line1} 
-              onChange={(e) => setForm({ ...form, address_line1: e.target.value })} 
-              className="form_input"
-              placeholder="Enter school address"
-            />
-          </div>
-          <div className="form_row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem' }}>
-            <div>
-              <Label className="form_label">City</Label>
+  // Render content based on current section
+  const renderContent = () => {
+    if (currentSection === 'create-school') {
+      return (
+        <div className="card wide animate-slide-in">
+          <h3 className="card_title" style={{ color: '#1f2937' }}>🏫 Create New School</h3>
+          <form onSubmit={createSchool}>
+            <div className="form_row">
+              <Label className="form_label" style={{ color: '#374151' }}>School Name</Label>
               <Input 
-                value={form.city} 
-                onChange={(e) => setForm({ ...form, city: e.target.value })} 
+                value={form.name} 
+                onChange={(e) => setForm({ ...form, name: e.target.value })} 
                 className="form_input"
-                placeholder="City"
-              />
-            </div>
-            <div>
-              <Label className="form_label">State</Label>
-              <Input 
-                value={form.state} 
-                onChange={(e) => setForm({ ...form, state: e.target.value })} 
-                className="form_input"
-                placeholder="State"
-              />
-            </div>
-            <div>
-              <Label className="form_label">Pincode</Label>
-              <Input 
-                value={form.pincode} 
-                onChange={(e) => setForm({ ...form, pincode: e.target.value })} 
-                className="form_input"
-                placeholder="Pincode"
-              />
-            </div>
-          </div>
-          <div className="form_row">
-            <Label className="form_label">Principal Name</Label>
-            <Input 
-              value={form.principal_name} 
-              onChange={(e) => setForm({ ...form, principal_name: e.target.value })} 
-              className="form_input"
-              placeholder="Enter principal's full name"
-              required 
-            />
-          </div>
-          <div className="form_row" style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '1rem' }}>
-            <div>
-              <Label className="form_label">Principal Email</Label>
-              <Input 
-                type="email" 
-                value={form.principal_email} 
-                onChange={(e) => setForm({ ...form, principal_email: e.target.value })} 
-                className="form_input"
-                placeholder="principal@school.edu"
+                placeholder="Enter school name"
                 required 
               />
             </div>
-            <div>
-              <Label className="form_label">Principal Phone</Label>
+            <div className="form_row">
+              <Label className="form_label" style={{ color: '#374151' }}>Address</Label>
               <Input 
-                value={form.principal_phone} 
-                onChange={(e) => setForm({ ...form, principal_phone: e.target.value })} 
+                value={form.address_line1} 
+                onChange={(e) => setForm({ ...form, address_line1: e.target.value })} 
                 className="form_input"
-                placeholder="+91 98765 43210"
+                placeholder="Enter school address"
               />
             </div>
-          </div>
-          <Button type="submit" className="btn_primary">🏗️ Create School</Button>
-        </form>
-        {message && (
-          <div className={message.includes('✅') ? 'success_message' : 'error_text'} style={{ marginTop: '1rem' }}>
-            {message}
-          </div>
-        )}
-      </div>
-
-      <div className="card wide animate-slide-in">
-        <h3 className="card_title">🏫 All Schools Management</h3>
-        <div className="table_wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>School Name</th>
-                <th>City</th>
-                <th>Principal</th>
-                <th>Email</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {schools.map((s) => (
-                <tr key={s.id}>
-                  <td>
-                    {editingId === s.id ? 
-                      <Input value={editDraft.name} onChange={(e)=>setEditDraft({...editDraft, name: e.target.value})} className="form_input" /> 
-                      : <span className="font-semibold text-gray-800">{s.name}</span>
-                    }
-                  </td>
-                  <td>
-                    {editingId === s.id ? 
-                      <Input value={editDraft.city || ''} onChange={(e)=>setEditDraft({...editDraft, city: e.target.value})} className="form_input" /> 
-                      : (s.city || <span className="text-gray-400">-</span>)
-                    }
-                  </td>
-                  <td>
-                    {editingId === s.id ? 
-                      <Input value={editDraft.principal_name || ''} onChange={(e)=>setEditDraft({...editDraft, principal_name: e.target.value})} className="form_input" /> 
-                      : (s.principal_name || <span className="text-gray-400">-</span>)
-                    }
-                  </td>
-                  <td>
-                    {editingId === s.id ? 
-                      <Input value={editDraft.principal_email || ''} onChange={(e)=>setEditDraft({...editDraft, principal_email: e.target.value})} className="form_input" /> 
-                      : (s.principal_email || <span className="text-gray-400">-</span>)
-                    }
-                  </td>
-                  <td style={{display:'flex',gap:'0.5rem', alignItems: 'center'}}>
-                    <Button 
-                      className="btn_secondary" 
-                      onClick={() => resend(s.principal_email)} 
-                      disabled={!s.principal_email}
-                      title="Resend login credentials"
-                    >
-                      📧 Resend
-                    </Button>
-                    {editingId === s.id ? (
-                      <>
-                        <Button className="btn_success" onClick={saveEdit}>✅ Save</Button>
-                        <Button className="btn_secondary" onClick={cancelEdit}>❌ Cancel</Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button className="btn_secondary" onClick={() => startEdit(s)}>✏️ Edit</Button>
-                        <Button className="btn_danger" onClick={() => removeSchool(s.id)}>🗑️ Delete</Button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            <div className="form_row" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '1rem' }}>
+              <div>
+                <Label className="form_label" style={{ color: '#374151' }}>City</Label>
+                <Input 
+                  value={form.city} 
+                  onChange={(e) => setForm({ ...form, city: e.target.value })} 
+                  className="form_input"
+                  placeholder="City"
+                />
+              </div>
+              <div>
+                <Label className="form_label" style={{ color: '#374151' }}>State</Label>
+                <Input 
+                  value={form.state} 
+                  onChange={(e) => setForm({ ...form, state: e.target.value })} 
+                  className="form_input"
+                  placeholder="State"
+                />
+              </div>
+              <div>
+                <Label className="form_label" style={{ color: '#374151' }}>Pincode</Label>
+                <Input 
+                  value={form.pincode} 
+                  onChange={(e) => setForm({ ...form, pincode: e.target.value })} 
+                  className="form_input"
+                  placeholder="Pincode"
+                />
+              </div>
+            </div>
+            <div className="form_row">
+              <Label className="form_label" style={{ color: '#374151' }}>Principal Name</Label>
+              <Input 
+                value={form.principal_name} 
+                onChange={(e) => setForm({ ...form, principal_name: e.target.value })} 
+                className="form_input"
+                placeholder="Enter principal's full name"
+                required 
+              />
+            </div>
+            <div className="form_row" style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '1rem' }}>
+              <div>
+                <Label className="form_label" style={{ color: '#374151' }}>Principal Email</Label>
+                <Input 
+                  type="email" 
+                  value={form.principal_email} 
+                  onChange={(e) => setForm({ ...form, principal_email: e.target.value })} 
+                  className="form_input"
+                  placeholder="principal@school.edu"
+                  required 
+                />
+              </div>
+              <div>
+                <Label className="form_label" style={{ color: '#374151' }}>Principal Phone</Label>
+                <Input 
+                  value={form.principal_phone} 
+                  onChange={(e) => setForm({ ...form, principal_phone: e.target.value })} 
+                  className="form_input"
+                  placeholder="+91 98765 43210"
+                />
+              </div>
+            </div>
+            <Button type="submit" className="btn_primary">🏗️ Create School</Button>
+          </form>
+          {message && (
+            <div className={message.includes('✅') ? 'success_message' : 'error_text'} style={{ marginTop: '1rem' }}>
+              {message}
+            </div>
+          )}
         </div>
-      </div>
+      );
+    } else if (currentSection === 'manage-schools') {
+      return (
+        <div className="card wide animate-slide-in">
+          <h3 className="card_title" style={{ color: '#1f2937' }}>🏫 All Schools Management</h3>
+          <div className="table_wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style={{ color: '#374151' }}>School Name</th>
+                  <th style={{ color: '#374151' }}>City</th>
+                  <th style={{ color: '#374151' }}>Principal</th>
+                  <th style={{ color: '#374151' }}>Email</th>
+                  <th style={{ color: '#374151' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {schools.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      {editingId === s.id ? 
+                        <Input value={editDraft.name} onChange={(e)=>setEditDraft({...editDraft, name: e.target.value})} className="form_input" /> 
+                        : <span className="font-semibold" style={{ color: '#1f2937' }}>{s.name}</span>
+                      }
+                    </td>
+                    <td style={{ color: '#4b5563' }}>
+                      {editingId === s.id ? 
+                        <Input value={editDraft.city || ''} onChange={(e)=>setEditDraft({...editDraft, city: e.target.value})} className="form_input" /> 
+                        : (s.city || <span style={{ color: '#9ca3af' }}>-</span>)
+                      }
+                    </td>
+                    <td style={{ color: '#4b5563' }}>
+                      {editingId === s.id ? 
+                        <Input value={editDraft.principal_name || ''} onChange={(e)=>setEditDraft({...editDraft, principal_name: e.target.value})} className="form_input" /> 
+                        : (s.principal_name || <span style={{ color: '#9ca3af' }}>-</span>)
+                      }
+                    </td>
+                    <td style={{ color: '#4b5563' }}>
+                      {editingId === s.id ? 
+                        <Input value={editDraft.principal_email || ''} onChange={(e)=>setEditDraft({...editDraft, principal_email: e.target.value})} className="form_input" /> 
+                        : (s.principal_email || <span style={{ color: '#9ca3af' }}>-</span>)
+                      }
+                    </td>
+                    <td style={{display:'flex',gap:'0.5rem', alignItems: 'center'}}>
+                      <Button 
+                        className="btn_secondary" 
+                        onClick={() => resend(s.principal_email)} 
+                        disabled={!s.principal_email}
+                        title="Resend login credentials"
+                      >
+                        📧 Resend
+                      </Button>
+                      {editingId === s.id ? (
+                        <>
+                          <Button className="btn_success" onClick={saveEdit}>✅ Save</Button>
+                          <Button className="btn_secondary" onClick={cancelEdit}>❌ Cancel</Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button className="btn_secondary" onClick={() => startEdit(s)}>✏️ Edit</Button>
+                          <Button className="btn_danger" onClick={() => removeSchool(s.id)}>🗑️ Delete</Button>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    } else {
+      // Default dashboard view
+      return (
+        <>
+          <HeroSection 
+            title="Government Education Dashboard"
+            subtitle="Manage schools, monitor attendance, and oversee educational infrastructure"
+            backgroundImage="https://images.unsplash.com/photo-1519389950473-47ba0277781c"
+          />
+          
+          {/* Statistics Overview */}
+          <StatsCard title="Total Schools" value={stats.totalSchools} gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" trend={8} />
+          <StatsCard title="Total Students" value={stats.totalStudents.toLocaleString()} gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" trend={12} />
+          <StatsCard title="Total Teachers" value={stats.totalTeachers.toLocaleString()} gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" trend={5} />
+        </>
+      );
+    }
+  };
+
+  return (
+    <div className="dash_grid">
+      {renderContent()}
     </div>
   );
 }
 
-function SchoolAdminLike({ me }) {
+function SchoolAdminLike({ me, currentSection, onSectionChange }) {
   const school = useMySchool(!!me);
   const [sections, setSections] = useState([]);
   const [students, setStudents] = useState([]);
@@ -477,352 +499,222 @@ function SchoolAdminLike({ me }) {
 
   const isSchoolAdmin = me?.role === 'SCHOOL_ADMIN';
 
+  // Render content based on current section
+  const renderContent = () => {
+    if (currentSection === 'enrollment') {
+      return <EnrollmentWithFace sections={sections} />;
+    } else if (currentSection === 'sections') {
+      return (
+        <div className="card wide animate-slide-in">
+          <h3 className="card_title" style={{ color: '#1f2937' }}>📚 Manage Sections</h3>
+          <form onSubmit={addSection}>
+            <div className="form_row">
+              <Label className="form_label" style={{ color: '#374151' }}>Section Name</Label>
+              <Input 
+                value={secName} 
+                onChange={(e) => setSecName(e.target.value)} 
+                className="form_input"
+                placeholder="e.g., 8-A, Grade 5"
+                required 
+              />
+            </div>
+            <div className="form_row">
+              <Label className="form_label" style={{ color: '#374151' }}>Grade Level</Label>
+              <Input 
+                value={secGrade} 
+                onChange={(e) => setSecGrade(e.target.value)} 
+                className="form_input"
+                placeholder="e.g., 8, 10, 12"
+              />
+            </div>
+            <Button className="btn_primary" type="submit">➕ Add Section</Button>
+          </form>
+
+          {sections.length > 0 && (
+            <div className="table_wrap" style={{marginTop: '1rem'}}>
+              <table>
+                <thead>
+                  <tr>
+                    <th style={{ color: '#374151' }}>Section Name</th>
+                    <th style={{ color: '#374151' }}>Grade</th>
+                    {isSchoolAdmin && <th style={{ color: '#374151' }}>Actions</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sections.map((s) => (
+                    <tr key={s.id}>
+                      <td>
+                        {editingSection === s.id ? 
+                          <Input value={sectionDraft.name} onChange={(e)=>setSectionDraft({...sectionDraft, name:e.target.value})} className="form_input" /> 
+                          : <span className="font-semibold" style={{ color: '#1f2937' }}>{s.name}</span>
+                        }
+                      </td>
+                      <td style={{ color: '#4b5563' }}>
+                        {editingSection === s.id ? 
+                          <Input value={sectionDraft.grade || ''} onChange={(e)=>setSectionDraft({...sectionDraft, grade:e.target.value})} className="form_input" /> 
+                          : (s.grade || <span style={{ color: '#9ca3af' }}>-</span>)
+                        }
+                      </td>
+                      {isSchoolAdmin && (
+                        <td style={{display:'flex',gap:'0.5rem'}}>
+                          {editingSection === s.id ? (
+                            <>
+                              <Button className="btn_success" onClick={saveSection}>✅ Save</Button>
+                              <Button className="btn_secondary" onClick={()=>{setEditingSection(null); setSectionDraft({});}}>❌ Cancel</Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button className="btn_secondary" onClick={()=>editSection(s)}>✏️ Edit</Button>
+                              <Button className="btn_danger" onClick={()=>deleteSection(s.id)}>🗑️ Delete</Button>
+                            </>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    } else if (currentSection === 'create-staff') {
+      return (
+        <div className="card wide animate-slide-in">
+          <h3 className="card_title" style={{ color: '#1f2937' }}>👥 Create Staff Credentials</h3>
+          <div className="form_row">
+            <Label className="form_label" style={{ color: '#374151' }}>Staff Role</Label>
+            <Select value={roleType} onValueChange={setRoleType}>
+              <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="TEACHER">👨‍🏫 Teacher</SelectItem>
+                <SelectItem value="CO_ADMIN">👨‍💼 Co-Admin</SelectItem>
+                <SelectItem value="STUDENT">👨‍🎓 Student (use form below)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <form onSubmit={createCredential}>
+            <div className="form_row">
+              <Label className="form_label" style={{ color: '#374151' }}>Full Name</Label>
+              <Input 
+                value={tName} 
+                onChange={(e) => setTName(e.target.value)} 
+                className="form_input"
+                placeholder="Enter full name"
+                required 
+              />
+            </div>
+            <div className="form_row">
+              <Label className="form_label" style={{ color: '#374151' }}>Email Address</Label>
+              <Input 
+                type="email" 
+                value={tEmail} 
+                onChange={(e) => setTEmail(e.target.value)} 
+                className="form_input"
+                placeholder="email@example.com"
+                required 
+              />
+            </div>
+            <div className="form_row">
+              <Label className="form_label" style={{ color: '#374151' }}>Phone Number</Label>
+              <Input 
+                value={tPhone} 
+                onChange={(e) => setTPhone(e.target.value)} 
+                className="form_input"
+                placeholder="+91 98765 43210"
+              />
+            </div>
+            {roleType === 'TEACHER' && (
+              <>
+                <div className="form_row">
+                  <Label className="form_label" style={{ color: '#374151' }}>Teaching Subject</Label>
+                  <Select value={subject} onValueChange={setSubject}>
+                    <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
+                    <SelectContent>
+                      {['Math','Science','English','Social','Telugu','Hindi','Other'].map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="form_row">
+                  <Label className="form_label" style={{ color: '#374151' }}>Assign to Section</Label>
+                  <select className="select" value={teacherSection} onChange={(e) => setTeacherSection(e.target.value)}>
+                    <option value="">No specific section</option>
+                    {sections.map((s) => (<option key={s.id} value={s.id}>{s.name} {s.grade ? `(Grade ${s.grade})` : ''}</option>))}
+                  </select>
+                </div>
+              </>
+            )}
+            <Button className="btn_primary" type="submit">✨ Create Account</Button>
+          </form>
+        </div>
+      );
+    } else {
+      // Default dashboard view
+      return (
+        <>
+          <HeroSection 
+            title={school ? `${school.name}` : "School Dashboard"}
+            subtitle={`${me?.role.replace('_', ' ')} Portal • ${me?.full_name}`}
+            backgroundImage="https://images.unsplash.com/photo-1580582932707-520aed937b7b"
+          />
+
+          {/* Quick Stats */}
+          <StatsCard title="Sections" value={sections.length} gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" />
+          <StatsCard title="Students" value={students.length} gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" />
+          <StatsCard title="Teachers" value={teachers.length} gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" />
+        </>
+      );
+    }
+  };
+
   return (
     <div className="dash_grid">
-      <HeroSection 
-        title={school ? `${school.name}` : "School Dashboard"}
-        subtitle={`${me?.role.replace('_', ' ')} Portal • ${me?.full_name}`}
-        backgroundImage="https://images.unsplash.com/photo-1580582932707-520aed937b7b"
-      />
-
-      {/* Quick Stats */}
-      <StatsCard title="Sections" value={sections.length} gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" />
-      <StatsCard title="Students" value={students.length} gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" />
-      <StatsCard title="Teachers" value={teachers.length} gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" />
-
-      <div className="card medium animate-slide-in">
-        <h3 className="card_title">📚 Add Section</h3>
-        <form onSubmit={addSection}>
-          <div className="form_row">
-            <Label className="form_label">Section Name</Label>
-            <Input 
-              value={secName} 
-              onChange={(e) => setSecName(e.target.value)} 
-              className="form_input"
-              placeholder="e.g., 8-A, Grade 5"
-              required 
-            />
-          </div>
-          <div className="form_row">
-            <Label className="form_label">Grade Level</Label>
-            <Input 
-              value={secGrade} 
-              onChange={(e) => setSecGrade(e.target.value)} 
-              className="form_input"
-              placeholder="e.g., 8, 10, 12"
-            />
-          </div>
-          <Button className="btn_primary" type="submit">➕ Add Section</Button>
-        </form>
-
-        {/* Section list with edit/delete */}
-        {sections.length > 0 && (
-          <div className="table_wrap" style={{marginTop: '1rem'}}>
-            <table>
-              <thead>
-                <tr>
-                  <th>Section Name</th>
-                  <th>Grade</th>
-                  {isSchoolAdmin && <th>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {sections.map((s) => (
-                  <tr key={s.id}>
-                    <td>
-                      {editingSection === s.id ? 
-                        <Input value={sectionDraft.name} onChange={(e)=>setSectionDraft({...sectionDraft, name:e.target.value})} className="form_input" /> 
-                        : <span className="font-semibold">{s.name}</span>
-                      }
-                    </td>
-                    <td>
-                      {editingSection === s.id ? 
-                        <Input value={sectionDraft.grade || ''} onChange={(e)=>setSectionDraft({...sectionDraft, grade:e.target.value})} className="form_input" /> 
-                        : (s.grade || <span className="text-gray-400">-</span>)
-                      }
-                    </td>
-                    {isSchoolAdmin && (
-                      <td style={{display:'flex',gap:'0.5rem'}}>
-                        {editingSection === s.id ? (
-                          <>
-                            <Button className="btn_success" onClick={saveSection}>✅ Save</Button>
-                            <Button className="btn_secondary" onClick={()=>{setEditingSection(null); setSectionDraft({});}}>❌ Cancel</Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button className="btn_secondary" onClick={()=>editSection(s)}>✏️ Edit</Button>
-                            <Button className="btn_danger" onClick={()=>deleteSection(s.id)}>🗑️ Delete</Button>
-                          </>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <div className="card medium animate-slide-in">
-        <h3 className="card_title">👥 Create Staff Credentials</h3>
-        <div className="form_row">
-          <Label className="form_label">Staff Role</Label>
-          <Select value={roleType} onValueChange={setRoleType}>
-            <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="TEACHER">👨‍🏫 Teacher</SelectItem>
-              <SelectItem value="CO_ADMIN">👨‍💼 Co-Admin</SelectItem>
-              <SelectItem value="STUDENT">👨‍🎓 Student (use form below)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <form onSubmit={createCredential}>
-          <div className="form_row">
-            <Label className="form_label">Full Name</Label>
-            <Input 
-              value={tName} 
-              onChange={(e) => setTName(e.target.value)} 
-              className="form_input"
-              placeholder="Enter full name"
-              required 
-            />
-          </div>
-          <div className="form_row">
-            <Label className="form_label">Email Address</Label>
-            <Input 
-              type="email" 
-              value={tEmail} 
-              onChange={(e) => setTEmail(e.target.value)} 
-              className="form_input"
-              placeholder="email@example.com"
-              required 
-            />
-          </div>
-          <div className="form_row">
-            <Label className="form_label">Phone Number</Label>
-            <Input 
-              value={tPhone} 
-              onChange={(e) => setTPhone(e.target.value)} 
-              className="form_input"
-              placeholder="+91 98765 43210"
-            />
-          </div>
-          {roleType === 'TEACHER' && (
-            <>
-              <div className="form_row">
-                <Label className="form_label">Teaching Subject</Label>
-                <Select value={subject} onValueChange={setSubject}>
-                  <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
-                  <SelectContent>
-                    {['Math','Science','English','Social','Telugu','Hindi','Other'].map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="form_row">
-                <Label className="form_label">Assign to Section</Label>
-                <select className="select" value={teacherSection} onChange={(e) => setTeacherSection(e.target.value)}>
-                  <option value="">No specific section</option>
-                  {sections.map((s) => (<option key={s.id} value={s.id}>{s.name} {s.grade ? `(Grade ${s.grade})` : ''}</option>))}
-                </select>
-              </div>
-            </>
-          )}
-          <Button className="btn_primary" type="submit">✨ Create Account</Button>
-        </form>
-      </div>
-
-      <div className="card medium animate-slide-in">
-        <h3 className="card_title">🎓 Add Student</h3>
-        <form onSubmit={addStudent}>
-          <div className="form_row">
-            <Label className="form_label">Select Section</Label>
-            <select className="select" value={selectedSec} onChange={(e) => loadStudents(e.target.value)} required>
-              <option value="">Choose section</option>
-              {sections.map((s) => (<option key={s.id} value={s.id}>{s.name} {s.grade ? `(Grade ${s.grade})` : ""}</option>))}
-            </select>
-          </div>
-          <div className="form_row">
-            <Label className="form_label">Student Name</Label>
-            <Input 
-              value={stuName} 
-              onChange={(e) => setStuName(e.target.value)} 
-              className="form_input"
-              placeholder="Enter student's full name"
-              required 
-            />
-          </div>
-          <div className="form_row">
-            <Label className="form_label">Roll Number</Label>
-            <Input 
-              value={rollNo} 
-              onChange={(e) => setRollNo(e.target.value)} 
-              className="form_input"
-              placeholder="e.g., 001, A-23"
-              required 
-            />
-          </div>
-          <div className="form_row">
-            <Label className="form_label">Parent's Mobile</Label>
-            <Input 
-              value={parentMobile} 
-              onChange={(e) => setParentMobile(e.target.value)} 
-              className="form_input"
-              placeholder="+91 98765 43210"
-            />
-          </div>
-          <Button className="btn_primary" type="submit">➕ Add Student</Button>
-        </form>
-      </div>
-
-      <EnrollmentWithFace sections={sections} />
-
-      <div className="card wide animate-slide-in">
-        <h3 className="card_title">👨‍🎓 Students in Selected Section</h3>
-        {selectedSec ? (
-          <div className="table_wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Student Name</th>
-                  <th>Roll No.</th>
-                  <th>Student Code</th>
-                  <th>Parent Mobile</th>
-                  {isSchoolAdmin && <th>Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((st) => (
-                  <tr key={st.id}>
-                    <td><span className="font-semibold text-gray-800">{st.name}</span></td>
-                    <td><span className="font-medium text-primary">{st.roll_no || '-'}</span></td>
-                    <td><code className="bg-gray-100 px-2 py-1 rounded text-xs">{st.student_code}</code></td>
-                    <td>{st.parent_mobile || <span className="text-gray-400">-</span>}</td>
-                    {isSchoolAdmin && (
-                      <td style={{display:'flex',gap:'0.5rem'}}>
-                        <Button className="btn_secondary" onClick={() => {
-                          const newName = prompt('Update name:', st.name) || st.name;
-                          const newRoll = prompt('Update roll number:', st.roll_no || '') || st.roll_no;
-                          const newParent = prompt('Update parent mobile:', st.parent_mobile || '') || st.parent_mobile;
-                          editStudent(st, { name: newName, roll_no: newRoll, parent_mobile: newParent });
-                        }}>✏️ Edit</Button>
-                        <Button className="btn_danger" onClick={() => deleteStudent(st.id)}>🗑️ Delete</Button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <div className="text-4xl mb-4">📚</div>
-            <p>Select a section above to view students</p>
-          </div>
-        )}
-      </div>
-
-      <div className="card wide animate-slide-in">
-        <h3 className="card_title">👨‍🏫 Staff Management</h3>
-        
-        <h4 className="text-lg font-semibold mb-4 text-gray-700">Teachers</h4>
-        <div className="table_wrap" style={{marginBottom: '2rem'}}>
-          <table>
-            <thead>
-              <tr>
-                <th>Teacher Name</th>
-                <th>Email</th>
-                <th>Subject</th>
-                <th>Assigned Section</th>
-                {isSchoolAdmin && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {teachers.map((t) => (
-                <tr key={t.id}>
-                  <td><span className="font-semibold text-gray-800">{t.full_name}</span></td>
-                  <td>{t.email}</td>
-                  <td><span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs font-medium">{t.subject || '-'}</span></td>
-                  <td>{(sections.find(s => s.id === t.section_id)?.name) || <span className="text-gray-400">-</span>}</td>
-                  {isSchoolAdmin && (
-                    <td style={{display:'flex',gap:'0.5rem'}}>
-                      <Button className="btn_secondary" onClick={async ()=>{
-                        const newName = prompt('Name:', t.full_name) || t.full_name;
-                        const newPhone = prompt('Phone:', t.phone || '') || t.phone;
-                        const newSubject = prompt('Subject (Math/Science/English/Social/Telugu/Hindi/Other):', t.subject || '');
-                        try { await api.put(`/users/${t.id}`, { full_name: newName, phone: newPhone, subject: newSubject || undefined }); loadStaff(); } catch(err){ alert(err?.response?.data?.detail || 'Update failed'); }
-                      }}>✏️ Edit</Button>
-                      <Button className="btn_danger" onClick={async ()=>{ if(confirm('⚠️ Delete this teacher?')) { await api.delete(`/users/${t.id}`); loadStaff(); } }}>🗑️ Delete</Button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <h4 className="text-lg font-semibold mb-4 text-gray-700">Co-Administrators</h4>
-        <div className="table_wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Co-Admin Name</th>
-                <th>Email</th>
-                <th>Phone</th>
-                {isSchoolAdmin && <th>Actions</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {coadmins.map((c) => (
-                <tr key={c.id}>
-                  <td><span className="font-semibold text-gray-800">{c.full_name}</span></td>
-                  <td>{c.email}</td>
-                  <td>{c.phone || <span className="text-gray-400">-</span>}</td>
-                  {isSchoolAdmin && (
-                    <td style={{display:'flex',gap:'0.5rem'}}>
-                      <Button className="btn_secondary" onClick={async ()=>{
-                        const newName = prompt('Name:', c.full_name) || c.full_name;
-                        const newPhone = prompt('Phone:', c.phone || '') || c.phone;
-                        try { await api.put(`/users/${c.id}`, { full_name: newName, phone: newPhone }); loadStaff(); } catch(err){ alert(err?.response?.data?.detail || 'Update failed'); }
-                      }}>✏️ Edit</Button>
-                      <Button className="btn_danger" onClick={async ()=>{ if(confirm('⚠️ Delete this co-admin?')) { await api.delete(`/users/${c.id}`); loadStaff(); } }}>🗑️ Delete</Button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {renderContent()}
     </div>
   );
 }
 
-function TeacherView({ me }) {
+function TeacherView({ me, currentSection, onSectionChange }) {
   const school = useMySchool(!!me);
+  
+  const renderContent = () => {
+    if (currentSection === 'scan-attendance') {
+      return <TeacherScan me={me} />;
+    } else {
+      return (
+        <>
+          <HeroSection 
+            title={school ? `${school.name}` : "Teacher Dashboard"}
+            subtitle={`Attendance Management Portal • ${me.full_name}`}
+            backgroundImage="https://images.unsplash.com/photo-1677442135703-1787eea5ce01"
+          />
+          <TeacherScan me={me} />
+        </>
+      );
+    }
+  };
+
   return (
     <div className="dash_grid">
-      <HeroSection 
-        title={school ? `${school.name}` : "Teacher Dashboard"}
-        subtitle={`Attendance Management Portal • ${me.full_name}`}
-        backgroundImage="https://images.unsplash.com/photo-1677442135703-1787eea5ce01"
-      />
-      <TeacherScan me={me} />
+      {renderContent()}
     </div>
   );
 }
 
 function App() {
   const { token, setToken, me } = useAuth();
+  const [currentSection, setCurrentSection] = useState('dashboard');
 
   const content = useMemo(() => {
     if (!token || !me) return <Login onLoggedIn={setToken} />;
-    if (me.role === 'GOV_ADMIN') return <GovAdmin me={me} />;
-    if (me.role === 'SCHOOL_ADMIN' || me.role === 'CO_ADMIN') return <SchoolAdminLike me={me} />;
-    return <TeacherView me={me} />;
-  }, [token, me]);
+    if (me.role === 'GOV_ADMIN') return <GovAdmin me={me} currentSection={currentSection} onSectionChange={setCurrentSection} />;
+    if (me.role === 'SCHOOL_ADMIN' || me.role === 'CO_ADMIN') return <SchoolAdminLike me={me} currentSection={currentSection} onSectionChange={setCurrentSection} />;
+    return <TeacherView me={me} currentSection={currentSection} onSectionChange={setCurrentSection} />;
+  }, [token, me, currentSection]);
+
+  const showSidebar = token && me;
 
   return (
     <div>
@@ -831,8 +723,8 @@ function App() {
         {me && (
           <div className="user_box">
             <div className="user_info">
-              <div className="user_email">{me.email}</div>
-              <div className="user_role">{me.role.replace('_', ' ')}</div>
+              <div className="user_email" style={{ color: '#374151' }}>{me.email}</div>
+              <div className="user_role" style={{ color: '#1e40af', backgroundColor: '#eff6ff' }}>{me.role.replace('_', ' ')}</div>
             </div>
             <Button className="btn_secondary" onClick={() => setToken("")}>
               🚪 Logout
@@ -840,7 +732,24 @@ function App() {
           </div>
         )}
       </header>
-      {content}
+      
+      <div style={{ display: 'flex', minHeight: 'calc(100vh - 70px)' }}>
+        {showSidebar && (
+          <Sidebar 
+            me={me} 
+            currentSection={currentSection} 
+            onSectionChange={setCurrentSection} 
+          />
+        )}
+        <main style={{ 
+          flex: 1, 
+          marginLeft: showSidebar ? '288px' : '0',
+          transition: 'margin-left 0.3s ease',
+          minHeight: 'calc(100vh - 70px)'
+        }}>
+          {content}
+        </main>
+      </div>
     </div>
   );
 }
