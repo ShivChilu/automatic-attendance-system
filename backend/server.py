@@ -1013,10 +1013,16 @@ class ResendReq(BaseModel):
     temp_password: Optional[str] = None
 
 @api.post("/users/resend-credentials")
-async def resend_credentials(payload: ResendReq, _: dict = Depends(require_roles('GOV_ADMIN'))):
+async def resend_credentials(payload: ResendReq, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN'))):
     user = await db.users.find_one({"email": payload.email.lower()})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
+    # If School Admin, only allow resending for TEACHERs within the same school
+    if current.get('role') == 'SCHOOL_ADMIN':
+        if user.get('role') != 'TEACHER' or user.get('school_id') != current.get('school_id'):
+            raise HTTPException(status_code=403, detail="Only teachers within your school can be resent credentials")
+
     temp = payload.temp_password or secrets.token_urlsafe(8)
     await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_password(temp)}})
     role_human = 'Teacher' if user['role']=='TEACHER' else ('School Admin' if user['role']=='SCHOOL_ADMIN' else 'Co-Admin' if user['role']=='CO_ADMIN' else 'Government Admin')
