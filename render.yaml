@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: attendance-backend
+    env: python
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/test-route
+    autoDeploy: true
+    envVars:
+      - key: MONGO_URL
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      - key: BREVO_SENDER_NAME
+        sync: false
+      - key: SEED_GOV_ADMIN_EMAIL
+        sync: false
+      - key: SEED_GOV_ADMIN_NAME
+        sync: false
+      - key: SEED_GOV_ADMIN_PASSWORD
+        sync: false
