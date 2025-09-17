@@ -26,10 +26,10 @@ mdurl==0.1.2
 motor==3.3.1
 mypy==1.17.1
 mypy_extensions==1.1.0
-numpy==1.26.4
+numpy==1.24.3
 oauthlib==3.3.1
 packaging==25.0
-pandas==2.3.2
+pandas==2.0.3
 passlib==1.7.4
 pathspec==0.12.1
 platformdirs==4.4.0
@@ -68,8 +68,9 @@ uvicorn==0.25.0
 watchfiles==1.1.0
 
 # Face recognition and computer vision
-opencv-python-headless==4.10.0.84
-mediapipe==0.10.18
+# MediaPipe 0.10.9 requires protobuf<4, so we use compatible versions
+opencv-python-headless==4.8.1.78
+mediapipe==0.10.9
 tflite-runtime==2.14.0
-protobuf==4.25.3
+protobuf==3.20.3
 matplotlib==3.7.2
