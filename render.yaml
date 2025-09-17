@@ -5,11 +5,16 @@ services:
     plan: free
     region: oregon
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install --upgrade pip setuptools wheel && pip install -r requirements.txt
     startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/test-route
     autoDeploy: true
     envVars:
+      # Pin Python to a version compatible with mediapipe/tflite-runtime
+      - key: PYTHON_VERSION
+        value: "3.10.13"
+
+      # Fill these on Render Dashboard (kept out of source using sync:false)
       - key: MONGO_URL
         sync: false
       - key: DB_NAME
