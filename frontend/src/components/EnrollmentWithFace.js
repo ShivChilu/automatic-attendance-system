@@ -57,6 +57,9 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
       shots.forEach((s, i) => fd.append("images", s.blob, `shot_${i+1}.jpg`));
       const res = await api.post("/enrollment/students", fd);
       setMessage(`✅ Successfully enrolled ${res.data.name}! Face embeddings created: ${res.data.embeddings_count}`);
+      if (shots[0]?.url) {
+        setRecent(prev => [{ name: res.data.name, section_id: res.data.section_id, imgUrl: shots[0].url }, ...prev].slice(0,6));
+      }
       if (onEnrolled) {
         onEnrolled({ id: res.data.id, name: res.data.name, section_id: res.data.section_id, parent_mobile: res.data.parent_mobile });
       }
