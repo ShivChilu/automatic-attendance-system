@@ -427,6 +427,25 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
   const [teachers, setTeachers] = useState([]);
   const [coadmins, setCoadmins] = useState([]);
 
+  const createCredential = async (e) => {
+    e.preventDefault();
+    try {
+      if (roleType === 'TEACHER') {
+        await api.post('/users/teachers', { full_name: tName, email: tEmail, phone: tPhone || undefined, subject, section_id: teacherSection || undefined });
+        alert('✅ Teacher created. Credentials emailed.');
+      } else if (roleType === 'CO_ADMIN') {
+        await api.post('/users/coadmins', { full_name: tName, email: tEmail, phone: tPhone || undefined });
+        alert('✅ Co-Admin created. Credentials emailed.');
+      } else {
+        alert('⚠️ Students can only be added via Face Enrollment.');
+      }
+      setTName(''); setTEmail(''); setTPhone(''); setTeacherSection('');
+      loadStaff();
+    } catch (err) {
+      alert(err?.response?.data?.detail || '❌ Failed to create credentials');
+    }
+  };
+
   const loadSections = async () => {
     const sec = await api.get("/sections");
     setSections(sec.data);
