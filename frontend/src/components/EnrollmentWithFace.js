@@ -55,6 +55,9 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
       shots.forEach((s, i) => fd.append("images", s.blob, `shot_${i+1}.jpg`));
       const res = await api.post("/enrollment/students", fd);
       setMessage(`✅ Successfully enrolled ${res.data.name}! Face embeddings created: ${res.data.embeddings_count}`);
+      if (onEnrolled) {
+        onEnrolled({ id: res.data.id, name: res.data.name, section_id: res.data.section_id, parent_mobile: res.data.parent_mobile });
+      }
       setName(""); setParentMobile(""); setHasTwin(false); setTwinGroupId(""); setShots([]);
     } catch (err) {
       const errorMsg = err?.response?.data?.detail || "Enrollment failed";
