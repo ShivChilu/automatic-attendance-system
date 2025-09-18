@@ -6,6 +6,8 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
 export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
+  const [recent, setRecent] = useState([]); // [{name, section_id, imgUrl}]
+
   const [selectedSec, setSelectedSec] = useState("");
   const [name, setName] = useState("");
   const [parentMobile, setParentMobile] = useState("");
