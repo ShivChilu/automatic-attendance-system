@@ -273,6 +273,23 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
         </div>
       </form>
 
+      {/* Recently Enrolled Preview */}
+      {recent.length > 0 && (
+        <div className="mt-8">
+          <Label className="form_label">🧒 Recently Enrolled</Label>
+          <div className="thumbs">
+            {recent.map((r, i) => (
+              <div key={i} className="thumb">
+                <img src={r.imgUrl} alt={r.name} />
+                <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                  {r.name}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Additional CSS for thumbs styling */}
       <style jsx>{`
         .thumbs {
