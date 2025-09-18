@@ -457,7 +457,7 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
 
   const addStudent = async (e) => {
     e.preventDefault();
-    await api.post("/students", { name: stuName, roll_no: rollNo, section_id: selectedSec, parent_mobile: parentMobile || undefined });
+    await api.post("/students/create", { name: stuName, roll_no: rollNo, section_id: selectedSec, parent_mobile: parentMobile || undefined });
     setStuName(""); setRollNo(""); setParentMobile("");
     if (selectedSec) { const list = await api.get(`/students?section_id=${selectedSec}`); setStudents(list.data); }
   };
@@ -471,23 +471,19 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
     if (selectedSec) { const list = await api.get(`/students?section_id=${selectedSec}`); setStudents(list.data); }
   };
 
-  const createCredential = async (e) => {
-    e.preventDefault();
-    try {
-      if (roleType === 'TEACHER') {
-        await api.post("/users/teachers", { full_name: tName, email: tEmail, role: "TEACHER", phone: tPhone, subject, section_id: teacherSection || undefined });
-        alert("✅ Teacher created successfully! Credentials have been emailed.");
-      } else if (roleType === 'CO_ADMIN') {
-        await api.post("/users/coadmins", { full_name: tName, email: tEmail, role: "CO_ADMIN", phone: tPhone });
-        alert("✅ Co-Admin created successfully! Credentials have been emailed.");
-      } else {
-        alert("💡 Use the Add Student form for students.");
-      }
-      setTName(""); setTEmail(""); setTPhone(""); setSubject("Math"); setTeacherSection("");
-      loadStaff();
-    } catch (err) {
-      alert(`❌ ${err?.response?.data?.detail || "Failed to create credentials"}`);
-    }
+  const resendUser = async (email) => {
+    try { await api.post('/users/resend-credentials', { email }); alert('✅ Credentials resent'); }
+    catch { alert('❌ Failed to resend'); }
+  };
+
+  const updateTeacher = async (userId, updates) => {
+    await api.put(`/users/${userId}`, updates);
+    loadStaff();
+  };
+  const deleteTeacher = async (userId) => {
+    if (!confirm('⚠️ Delete this teacher?')) return;
+    await api.delete(`/users/${userId}`);
+    loadStaff();
   };
 
   const loadStudents = async (secId) => {
@@ -570,6 +566,113 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
                           )}
                         </td>
                       )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    } else if (currentSection === 'teachers') {
+      return (
+        <div className="card wide animate-slide-in">
+          <h3 className="card_title" style={{ color: '#1f2937' }}>👨‍🏫 Teachers</h3>
+          <div className="table_wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style={{ color: '#374151' }}>Name</th>
+                  <th style={{ color: '#374151' }}>Email</th>
+                  <th style={{ color: '#374151' }}>Phone</th>
+                  <th style={{ color: '#374151' }}>Subject</th>
+                  <th style={{ color: '#374151' }}>Section</th>
+                  <th style={{ color: '#374151' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teachers.map((t) => (
+                  <tr key={t.id}>
+                    <td>
+                      <Input defaultValue={t.full_name} onBlur={(e)=> updateTeacher(t.id, { full_name: e.target.value })} className="form_input" />
+                    </td>
+                    <td style={{ color: '#4b5563' }}>{t.email}</td>
+                    <td>
+                      <Input defaultValue={t.phone || ''} onBlur={(e)=> updateTeacher(t.id, { phone: e.target.value || undefined })} className="form_input" />
+                    </td>
+                    <td>
+                      <select className="select" defaultValue={t.subject || 'Other'} onChange={(e)=> updateTeacher(t.id, { subject: e.target.value })}>
+                        {['Math','Science','English','Social','Telugu','Hindi','Other'].map((s)=> <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </td>
+                    <td>
+                      <select className="select" defaultValue={t.section_id || ''} onChange={(e)=> updateTeacher(t.id, { section_id: e.target.value || undefined })}>
+                        <option value="">Unassigned</option>
+                        {sections.map((s)=> <option key={s.id} value={s.id}>{s.name}{s.grade ? ` (Grade ${s.grade})` : ''}</option>)}
+                      </select>
+                    </td>
+                    <td style={{display:'flex',gap:'0.5rem'}}>
+                      <Button className="btn_secondary" onClick={()=> resendUser(t.email)}>📧 Resend</Button>
+                      <Button className="btn_danger" onClick={()=> deleteTeacher(t.id)}>🗑️ Delete</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    } else if (currentSection === 'students') {
+      return (
+        <div className="card wide animate-slide-in">
+          <h3 className="card_title" style={{ color: '#1f2937' }}>👨‍🎓 Student Management</h3>
+          <div className="form_row">
+            <Label className="form_label" style={{ color: '#374151' }}>Select Section</Label>
+            <select className="select" value={selectedSec} onChange={(e) => loadStudents(e.target.value)}>
+              <option value="">— Choose a Section —</option>
+              {sections.map((s) => (<option key={s.id} value={s.id}>{s.name}{s.grade ? ` (Grade ${s.grade})` : ''}</option>))}
+            </select>
+          </div>
+
+          {/* Add Student */}
+          {selectedSec && (
+            <form onSubmit={addStudent} style={{ marginTop: '1rem' }}>
+              <div className="form_row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: '0.5rem' }}>
+                <Input value={stuName} onChange={(e)=>setStuName(e.target.value)} placeholder="Full name" required className="form_input" />
+                <Input value={rollNo} onChange={(e)=>setRollNo(e.target.value)} placeholder="Roll No" className="form_input" />
+                <Input value={parentMobile} onChange={(e)=>setParentMobile(e.target.value)} placeholder="Parent Mobile" className="form_input" />
+                <Button className="btn_primary" type="submit">➕ Add</Button>
+              </div>
+            </form>
+          )}
+
+          {/* Students Table */}
+          {selectedSec && (
+            <div className="table_wrap" style={{marginTop: '1rem'}}>
+              <table>
+                <thead>
+                  <tr>
+                    <th style={{ color: '#374151' }}>Name</th>
+                    <th style={{ color: '#374151' }}>Roll No</th>
+                    <th style={{ color: '#374151' }}>Parent Mobile</th>
+                    <th style={{ color: '#374151' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((st) => (
+                    <tr key={st.id}>
+                      <td>
+                        <Input defaultValue={st.name} onBlur={(e)=> editStudent(st, { name: e.target.value })} className="form_input" />
+                      </td>
+                      <td>
+                        <Input defaultValue={st.roll_no || ''} onBlur={(e)=> editStudent(st, { roll_no: e.target.value || undefined })} className="form_input" />
+                      </td>
+                      <td>
+                        <Input defaultValue={st.parent_mobile || ''} onBlur={(e)=> editStudent(st, { parent_mobile: e.target.value || undefined })} className="form_input" />
+                      </td>
+                      <td style={{display:'flex',gap:'0.5rem'}}>
+                        <Button className="btn_danger" onClick={()=> deleteStudent(st.id)}>🗑️ Delete</Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -661,9 +764,27 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
           />
 
           {/* Quick Stats */}
-          <StatsCard title="Sections" value={sections.length} gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" />
-          <StatsCard title="Students" value={students.length} gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" />
-          <StatsCard title="Teachers" value={teachers.length} gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" />
+          <div className="grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:'1rem'}}>
+            <div onClick={()=>onSectionChange('sections')} style={{cursor:'pointer'}}>
+              <StatsCard title="Sections" value={sections.length} gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" />
+            </div>
+            <div onClick={()=>onSectionChange('students')} style={{cursor:'pointer'}}>
+              <StatsCard title="Students" value={students.length} gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" />
+            </div>
+            <div onClick={()=>onSectionChange('teachers')} style={{cursor:'pointer'}}>
+              <StatsCard title="Teachers" value={teachers.length} gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" />
+            </div>
+          </div>
+
+          {/* Quick Launch Buttons */}
+          <div className="card wide animate-slide-in" style={{marginTop:'1rem'}}>
+            <div style={{display:'flex', gap:'0.75rem', flexWrap:'wrap'}}>
+              <Button className="btn_primary" onClick={()=>onSectionChange('sections')}>📚 Go to Sections</Button>
+              <Button className="btn_primary" onClick={()=>onSectionChange('students')}>👨‍🎓 Go to Students</Button>
+              <Button className="btn_primary" onClick={()=>onSectionChange('teachers')}>👨‍🏫 Go to Teachers</Button>
+              <Button className="btn_secondary" onClick={()=>onSectionChange('enrollment')}>🎭 Face Enrollment</Button>
+            </div>
+          </div>
         </>
       );
     }
@@ -706,6 +827,7 @@ function TeacherView({ me, currentSection, onSectionChange }) {
 function App() {
   const { token, setToken, me } = useAuth();
   const [currentSection, setCurrentSection] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('sidebar_collapsed') === 'true');
 
   const content = useMemo(() => {
     if (!token || !me) return <Login onLoggedIn={setToken} />;
@@ -726,7 +848,7 @@ function App() {
               <div className="user_email" style={{ color: '#374151' }}>{me.email}</div>
               <div className="user_role" style={{ color: '#1e40af', backgroundColor: '#eff6ff' }}>{me.role.replace('_', ' ')}</div>
             </div>
-            <Button className="btn_secondary" onClick={() => setToken("")}>
+            <Button className="btn_secondary" onClick={() => setToken("")}> 
               🚪 Logout
             </Button>
           </div>
@@ -738,12 +860,13 @@ function App() {
           <Sidebar 
             me={me} 
             currentSection={currentSection} 
-            onSectionChange={setCurrentSection} 
+            onSectionChange={setCurrentSection}
+            onToggle={(collapsed) => setSidebarCollapsed(collapsed)}
           />
         )}
         <main style={{ 
           flex: 1, 
-          marginLeft: showSidebar ? '288px' : '0',
+          marginLeft: showSidebar ? (sidebarCollapsed ? '0' : '288px') : '0',
           transition: 'margin-left 0.3s ease',
           minHeight: 'calc(100vh - 70px)'
         }}>
