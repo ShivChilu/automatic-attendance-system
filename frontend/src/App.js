@@ -498,7 +498,18 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
   // Render content based on current section
   const renderContent = () => {
     if (currentSection === 'enrollment') {
-      return <EnrollmentWithFace sections={sections} />;
+      return <EnrollmentWithFace sections={sections} onEnrolled={async (enrolled) => {
+        try {
+          // After enrollment, focus the selected section and refresh students list
+          setSelectedSec(enrolled.section_id);
+          const list = await api.get(`/students?section_id=${enrolled.section_id}`);
+          setStudents(list.data || []);
+          // Optionally navigate to Students tab to show the updated list
+          // onSectionChange('students');
+        } catch (e) {
+          // ignore
+        }
+      }} />;
     } else if (currentSection === 'sections') {
       return (
         <div className="card wide animate-slide-in">
