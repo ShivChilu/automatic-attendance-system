@@ -583,6 +583,8 @@ async def list_students(section_id: Optional[str] = None, current: dict = Depend
             raise HTTPException(status_code=403, detail="Not allowed for this section")
         if not section_id:
             query["section_id"] = {"$in": list(allowed_sec_ids)}
+    # Only return students who have completed face enrollment (embeddings exist and non-empty)
+    query["embeddings.0"] = {"$exists": True}
     items = await db.students.find(query).to_list(10000)
     return [Student(**i) for i in items]
 
