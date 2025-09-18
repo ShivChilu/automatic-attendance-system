@@ -1,7 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const Sidebar = ({ me, currentSection, onSectionChange }) => {
+const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebar_collapsed');
+    if (saved === 'true') setIsCollapsed(true);
+  }, []);
+
+  const toggle = () => {
+    const next = !isCollapsed;
+    setIsCollapsed(next);
+    localStorage.setItem('sidebar_collapsed', String(next));
+    if (onToggle) onToggle(next);
+  };
 
   const getMenuItems = () => {
     if (me?.role === 'GOV_ADMIN') {
@@ -115,11 +127,11 @@ const Sidebar = ({ me, currentSection, onSectionChange }) => {
 
   return (
     <>
-      {/* Mobile Overlay */}
+      {/* Overlay when open on small screens */}
       {!isCollapsed && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setIsCollapsed(true)}
+          onClick={toggle}
         />
       )}
       
@@ -138,10 +150,11 @@ const Sidebar = ({ me, currentSection, onSectionChange }) => {
               </div>
             )}
             <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
+              onClick={toggle}
               className="p-2 rounded-lg bg-white bg-opacity-50 hover:bg-opacity-70 transition-all duration-200 text-gray-700 hover:text-gray-900"
+              title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
-              {isCollapsed ? '📂' : '📁'}
+              {isCollapsed ? '→' : '←'}
             </button>
           </div>
         </div>
@@ -195,9 +208,20 @@ const Sidebar = ({ me, currentSection, onSectionChange }) => {
         </div>
       </div>
 
+      {/* Toggle handle visible when collapsed on desktop */}
+      {isCollapsed && (
+        <button
+          onClick={toggle}
+          className="fixed top-1/2 -translate-y-1/2 left-2 z-40 hidden lg:block p-2 bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm rounded-xl shadow-lg border border-white border-opacity-30"
+          title="Expand sidebar"
+        >
+          →
+        </button>
+      )}
+
       {/* Mobile Toggle Button */}
       <button
-        onClick={() => setIsCollapsed(false)}
+        onClick={() => { if (isCollapsed) toggle(); }}
         className="fixed top-4 left-4 z-30 lg:hidden p-3 bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm rounded-xl shadow-lg border border-white border-opacity-30"
       >
         <span className="text-xl">☰</span>
