@@ -14,7 +14,7 @@ def test_405_debug():
     
     # Test URLs
     internal_base = "http://localhost:8001/api"
-    external_base = "https://attendscan-10.preview.emergentagent.com/api"
+    external_base = "https://react-env-vars.preview.emergentagent.com/api"
     
     print(f"Internal API: {internal_base}")
     print(f"External API: {external_base}")
