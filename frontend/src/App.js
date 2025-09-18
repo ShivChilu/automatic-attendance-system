@@ -634,16 +634,16 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
             </select>
           </div>
 
-          {/* Add Student */}
+          {/* Info: Face enrollment only */}
           {selectedSec && (
-            <form onSubmit={addStudent} style={{ marginTop: '1rem' }}>
-              <div className="form_row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr auto', gap: '0.5rem' }}>
-                <Input value={stuName} onChange={(e)=>setStuName(e.target.value)} placeholder="Full name" required className="form_input" />
-                <Input value={rollNo} onChange={(e)=>setRollNo(e.target.value)} placeholder="Roll No" className="form_input" />
-                <Input value={parentMobile} onChange={(e)=>setParentMobile(e.target.value)} placeholder="Parent Mobile" className="form_input" />
-                <Button className="btn_primary" type="submit">➕ Add</Button>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
+              <div className="text-blue-800 text-sm">
+                ⚠️ Students can only be added via the Face Enrollment flow. Use the "Face Enrollment" section to enroll students; they will appear here automatically after a successful enrollment.
               </div>
-            </form>
+              <div className="mt-2">
+                <Button className="btn_secondary" onClick={() => onSectionChange('enrollment')}>🎭 Go to Face Enrollment</Button>
+              </div>
+            </div>
           )}
 
           {/* Students Table */}
