@@ -317,6 +317,21 @@ frontend:
         - working: true
           agent: "main"
           comment: "Implemented GET /api/students (scoped by role and section)."
+        - working: true
+          agent: "testing"
+          comment: "REVIEW TESTING COMPLETED: ✅ GET /api/students correctly filters students by embeddings using query 'embeddings.0': {'$exists': True} ✅ Only students with face enrollment (non-empty embeddings array) are returned ✅ Students without embeddings field are excluded ✅ Students with empty embeddings array are excluded ✅ Comprehensive testing with direct MongoDB manipulation confirmed filtering logic works perfectly. The embeddings filter is working as specified in the review request."
+
+  - task: "Students Create Endpoint Disabled"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "REVIEW TESTING COMPLETED: ✅ POST /api/students/create correctly returns 405 Method Not Allowed ✅ Error message matches exactly: 'Disabled: Use /api/enrollment/students for face enrollment only' ✅ Endpoint is properly disabled as specified in review request. Students can only be created via face enrollment endpoint."
 
 metadata:
   created_by: "main_agent"
