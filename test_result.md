@@ -332,6 +332,19 @@ frontend:
         - working: true
           agent: "testing"
           comment: "REVIEW TESTING COMPLETED: ✅ POST /api/students/create correctly returns 405 Method Not Allowed ✅ Error message matches exactly: 'Disabled: Use /api/enrollment/students for face enrollment only' ✅ Endpoint is properly disabled as specified in review request. Students can only be created via face enrollment endpoint."
+  - task: "Students list should show only enrolled (with embeddings)"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "Added filter embeddings.0: {$exists: true} in GET /api/students and return response explicitly"
+
+
 
 metadata:
   created_by: "main_agent"
