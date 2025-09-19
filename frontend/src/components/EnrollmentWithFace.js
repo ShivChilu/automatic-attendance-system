@@ -185,7 +185,7 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
               <div>
                 <Input 
                   value={twinOf} 
-                  onChange={(e)=>setTwinOf(e.target.value)} 
+                  onChange={(e)=>{ setTwinOf(e.target.value); setSelectedTwin(null); }} 
                   placeholder="Twin sibling Student ID"
                   disabled={!hasTwin}
                   style={{ 
@@ -197,25 +197,36 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
                   }}
                 />
                 {hasTwin && (
-                  <button
-                    type="button"
-                    className="btn_secondary"
-                    onClick={async ()=>{
-                      try {
-                        const q = prompt('Search twin by name/roll/student code:');
-                        if (!q) return;
-                        const res = await api.get('/students/search', { params: { query: q, section_id: selectedSec || undefined } });
-                        if ((res.data.items||[]).length === 0) {
-                          alert('No students found');
-                          return;
-                        }
-                        const pick = prompt('Enter the Student ID from the list:\n' + res.data.items.map(it => `${it.name} (${it.id}) ${it.roll_no?'- Roll: '+it.roll_no:''}`).join('\n'));
-                        if (pick) setTwinOf(pick);
-                      } catch (e) { alert('Search failed'); }
-                    }}
-                    style={{ marginTop: '4px' }}
-                    disabled={!selectedSec}
-                  >🔎 Search</button>
+                  <div className="mt-2">
+                    <Input
+                      value={twinSearch}
+                      onChange={(e)=> setTwinSearch(e.target.value)}
+                      placeholder="Search twin by name / roll / code"
+                      disabled={!selectedSec}
+                      className="form_input"
+                    />
+                    {/* Results dropdown */}
+                    {twinSearching && <div className="text-xs text-gray-500 mt-1">Searching...</div>}
+                    {!twinSearching && twinResults.length > 0 && (
+                      <div className="mt-2 border rounded-lg bg-white shadow-sm max-h-40 overflow-auto">
+                        {twinResults.map((it) => (
+                          <button
+                            type="button"
+                            key={it.id}
+                            className="w-full text-left px-3 py-2 hover:bg-blue-50"
+                            onClick={() => {
+                              setTwinOf(it.id);
+                              setSelectedTwin(it);
+                              setTwinSearch(it.name);
+                            }}
+                          >
+                            <div className="text-sm font-medium text-gray-800">{it.name}</div>
+                            <div className="text-xs text-gray-500">ID: {it.id}{it.roll_no ? ` • Roll: ${it.roll_no}` : ''}{it.student_code ? ` • Code: ${it.student_code}` : ''}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
               <Input 
