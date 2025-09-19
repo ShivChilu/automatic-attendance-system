@@ -3,6 +3,8 @@ import CameraCapture from "./CameraCapture";
 import { api } from "../lib/api";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
+import { Button as UIButton } from "./ui/button";
 
 export default function TeacherScan({ me }) {
   const [facingMode, setFacingMode] = useState("user");
@@ -13,6 +15,7 @@ export default function TeacherScan({ me }) {
   const [sampleUrl, setSampleUrl] = useState("https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=256");
   const [scanHistory, setScanHistory] = useState([]);
   const [isScanning, setIsScanning] = useState(false);
+  const [twinSelect, setTwinSelect] = useState({ open: false, candidates: [], blob: null });
 
   useEffect(() => {
     api.get("/sections").then((res) => {
@@ -42,6 +45,12 @@ export default function TeacherScan({ me }) {
         headers: { "Content-Type": "multipart/form-data" } 
       });
       
+      // Twin disambiguation flow with modal UI
+      if (res.data?.twin_conflict && Array.isArray(res.data?.twin_candidates)) {
+        setTwinSelect({ open: true, candidates: res.data.twin_candidates, blob });
+        return; // hold here until user selects
+      }
+
       const result = res.data.status || "";
       setStatus(result);
       
@@ -183,6 +192,52 @@ export default function TeacherScan({ me }) {
               <div className="font-semibold text-center">{status}</div>
             </div>
           )}
+
+          {/* Twin selection dialog */}
+          <Dialog open={twinSelect.open} onOpenChange={(open)=> setTwinSelect(prev => ({...prev, open}))}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>👯 Twin detected. Please confirm the student.</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 mt-3">
+                {twinSelect.candidates.map(c => (
+                  <div key={c.id} className="flex items-center justify-between p-3 border rounded-xl">
+                    <div>
+                      <div className="font-semibold">{c.name}</div>
+                      <div className="text-xs text-gray-500">ID: {c.id}</div>
+                    </div>
+                    <UIButton
+                      className="btn_primary"
+                      onClick={async ()=>{
+                        try {
+                          if (!section?.id) return;
+                          const fd2 = new FormData();
+                          fd2.append("image", twinSelect.blob, "scan.jpg");
+                          fd2.append("section_id", section.id);
+                          fd2.append("confirmed_student_id", c.id);
+                          const res2 = await api.post("/attendance/mark", fd2, { headers: { "Content-Type": "multipart/form-data" } });
+                          const result2 = res2.data.status || "";
+                          setStatus(result2);
+                          const timestamp2 = new Date().toLocaleTimeString();
+                          setScanHistory(prev => [
+                            { timestamp: timestamp2, result: result2, success: result2.includes('marked') },
+                            ...prev.slice(0, 9)
+                          ]);
+                          await loadSummary(section.id);
+                          setTwinSelect({ open: false, candidates: [], blob: null });
+                        } catch (e) {
+                          setStatus("❌ Twin confirmation failed");
+                        }
+                      }}
+                    >Select</UIButton>
+                  </div>
+                ))}
+              </div>
+              <DialogFooter>
+                <UIButton className="btn_secondary" onClick={()=> setTwinSelect({ open: false, candidates: [], blob: null })}>Cancel</UIButton>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Stats & History Sidebar */}
