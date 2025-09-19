@@ -691,11 +691,11 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
                 <tbody>
                   {students.map((st) => (
                     <tr key={st.id}>
-                      <td>
-                        <Input defaultValue={st.name} onBlur={(e)=> editStudent(st, { name: e.target.value })} className="form_input" />
+                      <td style={{ width: '90px' }}>
+                        <div className="form_input" style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}>{st.roll_no || st.student_code}</div>
                       </td>
                       <td>
-                        <Input defaultValue={st.roll_no || ''} onBlur={(e)=> editStudent(st, { roll_no: e.target.value || undefined })} className="form_input" />
+                        <Input defaultValue={st.name} onBlur={(e)=> editStudent(st, { name: e.target.value })} className="form_input" />
                       </td>
                       <td>
                         <Input defaultValue={st.parent_mobile || ''} onBlur={(e)=> editStudent(st, { parent_mobile: e.target.value || undefined })} className="form_input" />
