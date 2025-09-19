@@ -126,7 +126,7 @@ class ValidationErrorTester:
             detail = response.get('detail')
             if isinstance(detail, str):
                 print(f"✅ Validation error detail is STRING: '{detail}'")
-                if 'full_name' in detail and 'field required' in detail:
+                if 'full_name' in detail and ('field required' in detail.lower() or 'Field required' in detail):
                     print(f"✅ Detail contains expected validation message")
                     return True
                 else:
