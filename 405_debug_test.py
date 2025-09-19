@@ -14,7 +14,7 @@ def test_405_debug():
     
     # Test URLs
     internal_base = "http://localhost:8001/api"
-    external_base = "https://teacher-reg-fix.preview.emergentagent.com/api"
+    external_base = "https://eduattend-26.preview.emergentagent.com/api"
     
     print(f"Internal API: {internal_base}")
     print(f"External API: {external_base}")
