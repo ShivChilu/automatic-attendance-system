@@ -346,6 +346,8 @@ test_plan:
   test_all: false
   test_priority: "high_first"
 
+  - "Fix: Students list returns only enrolled students and frontend refresh after enrollment"
+
 agent_communication:
     - agent: "main"
       message: "Environment files created successfully. MongoDB Atlas connection established. Government Admin dashboard verified working. Backend APIs and frontend authentication tested manually. Need comprehensive backend API testing for all endpoints and role-based access control."
