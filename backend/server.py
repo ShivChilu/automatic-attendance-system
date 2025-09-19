@@ -1053,9 +1053,7 @@ async def delete_student(student_id: str, current: dict = Depends(require_roles(
 ALLOWED_SUBJECTS = ["Math", "Science", "English", "Social", "Telugu", "Hindi", "Other"]
 
 @api.post("/users/teachers", response_model=UserPublic)
-async def create_teacher(payload: UserCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN'))):
-    if payload.role != 'TEACHER':
-        raise HTTPException(status_code=400, detail="role must be TEACHER for this endpoint")
+async def create_teacher(payload: TeacherCreateRequest, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN'))):
     # Scope
     school_id = payload.school_id or current.get("school_id")
     if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN'):
