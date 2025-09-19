@@ -683,7 +683,7 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
                 <thead>
                   <tr>
                     <th style={{ color: '#374151' }}>Name</th>
-                    <th style={{ color: '#374151' }}>Roll No</th>
+                    <th style={{ color: '#374151' }}>ID</th>
                     <th style={{ color: '#374151' }}>Parent Mobile</th>
                     <th style={{ color: '#374151' }}>Actions</th>
                   </tr>
