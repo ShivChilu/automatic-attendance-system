@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import EnrollmentWithFace from "./components/EnrollmentWithFace";
 import TeacherScan from "./components/TeacherScan";
 import Sidebar from "./components/Sidebar";
+import TeacherAttendanceFlow from "./components/TeacherAttendanceFlow.jsx";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -160,7 +161,6 @@ function GovAdmin({ me, currentSection, onSectionChange }) {
   const loadSchools = async () => {
     const res = await api.get("/schools");
     setSchools(res.data);
-    // Calculate stats
     setStats({
       totalSchools: res.data.length,
       totalStudents: res.data.reduce((acc, school) => acc + (school.student_count || 0), 0),
@@ -204,7 +204,6 @@ function GovAdmin({ me, currentSection, onSectionChange }) {
     await api.delete(`/schools/${id}`); loadSchools();
   };
 
-  // Render content based on current section
   const renderContent = () => {
     if (currentSection === 'create-school') {
       return (
@@ -371,7 +370,6 @@ function GovAdmin({ me, currentSection, onSectionChange }) {
         </div>
       );
     } else {
-      // Default dashboard view
       return (
         <>
           <HeroSection 
@@ -379,8 +377,6 @@ function GovAdmin({ me, currentSection, onSectionChange }) {
             subtitle="Manage schools, monitor attendance, and oversee educational infrastructure"
             backgroundImage="https://images.unsplash.com/photo-1519389950473-47ba0277781c"
           />
-          
-          {/* Statistics Overview */}
           <StatsCard title="Total Schools" value={stats.totalSchools} gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" trend={8} />
           <StatsCard title="Total Students" value={stats.totalStudents.toLocaleString()} gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" trend={12} />
           <StatsCard title="Total Teachers" value={stats.totalTeachers.toLocaleString()} gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" trend={5} />
@@ -401,21 +397,16 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
   const [sections, setSections] = useState([]);
   const [students, setStudents] = useState([]);
 
-  // Add Section
   const [secName, setSecName] = useState("");
   const [secGrade, setSecGrade] = useState("");
-
-  // Section manage edit
   const [editingSection, setEditingSection] = useState(null);
   const [sectionDraft, setSectionDraft] = useState({});
 
-  // Student
   const [stuName, setStuName] = useState("");
   const [rollNo, setRollNo] = useState("");
   const [parentMobile, setParentMobile] = useState("");
   const [selectedSec, setSelectedSec] = useState("");
 
-  // Create Credentials
   const [roleType, setRoleType] = useState("TEACHER");
   const [tName, setTName] = useState("");
   const [tEmail, setTEmail] = useState("");
@@ -423,7 +414,6 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
   const [subject, setSubject] = useState("Math");
   const [teacherSection, setTeacherSection] = useState("");
 
-  // Staff tables
   const [teachers, setTeachers] = useState([]);
   const [coadmins, setCoadmins] = useState([]);
 
@@ -518,21 +508,14 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
 
   const isSchoolAdmin = me?.role === 'SCHOOL_ADMIN';
 
-  // Render content based on current section
   const renderContent = () => {
     if (currentSection === 'enrollment') {
       return <EnrollmentWithFace sections={sections} onEnrolled={async (enrolled) => {
         try {
-          // After enrollment, focus the selected section and refresh students list
           setSelectedSec(enrolled.section_id);
-          // Show both enrolled and non-enrolled students to ensure visibility immediately after enrollment
           const list = await api.get(`/students?section_id=${enrolled.section_id}&enrolled_only=false`);
           setStudents(list.data || []);
-          // Optionally navigate to Students tab to show the updated list
-          // onSectionChange('students');
-        } catch (e) {
-          // ignore
-        }
+        } catch (e) {}
       }} />;
     } else if (currentSection === 'sections') {
       return (
@@ -668,8 +651,6 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
               {sections.map((s) => (<option key={s.id} value={s.id}>{s.name}{s.grade ? ` (Grade ${s.grade})` : ''}</option>))}
             </select>
           </div>
-
-          {/* Info: Face enrollment only */}
           {selectedSec && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
               <div className="text-blue-800 text-sm">
@@ -680,8 +661,6 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
               </div>
             </div>
           )}
-
-          {/* Students Table */}
           {selectedSec && (
             <div className="table_wrap" style={{marginTop: '1rem'}}>
               <table>
@@ -789,7 +768,6 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
         </div>
       );
     } else {
-      // Default dashboard view
       return (
         <>
           <HeroSection 
@@ -797,8 +775,6 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
             subtitle={`${me?.role.replace('_', ' ')} Portal • ${me?.full_name}`}
             backgroundImage="https://images.unsplash.com/photo-1580582932707-520aed937b7b"
           />
-
-          {/* Quick Stats */}
           <div className="grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:'1rem'}}>
             <div onClick={()=>onSectionChange('sections')} style={{cursor:'pointer'}}>
               <StatsCard title="Sections" value={sections.length} gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" />
@@ -810,8 +786,6 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
               <StatsCard title="Teachers" value={teachers.length} gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" />
             </div>
           </div>
-
-          {/* Quick Launch Buttons */}
           <div className="card wide animate-slide-in" style={{marginTop:'1rem'}}>
             <div style={{display:'flex', gap:'0.75rem', flexWrap:'wrap'}}>
               <Button className="btn_primary" onClick={()=>onSectionChange('sections')}>📚 Go to Sections</Button>
@@ -834,10 +808,9 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
 
 function TeacherView({ me, currentSection, onSectionChange }) {
   const school = useMySchool(!!me);
-  
   const renderContent = () => {
     if (currentSection === 'scan-attendance') {
-      return <TeacherScan me={me} />;
+      return <TeacherAttendanceFlow me={me} />;
     } else {
       return (
         <>
@@ -846,12 +819,11 @@ function TeacherView({ me, currentSection, onSectionChange }) {
             subtitle={`Attendance Management Portal • ${me.full_name}`}
             backgroundImage="https://images.unsplash.com/photo-1677442135703-1787eea5ce01"
           />
-          <TeacherScan me={me} />
+          <TeacherAttendanceFlow me={me} />
         </>
       );
     }
   };
-
   return (
     <div className="dash_grid">
       {renderContent()}
@@ -889,7 +861,6 @@ function App() {
           </div>
         )}
       </header>
-      
       <div style={{ display: 'flex', minHeight: 'calc(100vh - 70px)' }}>
         {showSidebar && (
           <Sidebar 
