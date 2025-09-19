@@ -509,7 +509,7 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
     setSelectedSec(secId);
     if (!secId) { setStudents([]); return; }
     const list = await api.get(`/students?section_id=${secId}`);
-    setStudents(list.data);
+    setStudents(list.data || []);
   };
 
   const isSchoolAdmin = me?.role === 'SCHOOL_ADMIN';
