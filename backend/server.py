@@ -1098,6 +1098,237 @@ async def attendance_summary(section_id: str, date: Optional[str] = None, curren
     items = [AttendanceSummaryItem(student_id=s['id'], name=s['name'], present=s['id'] in present_ids, marked_at=time_by_id.get(s['id'])) for s in students]
     return AttendanceSummary(section_id=section_id, date=date, total=len(students), present_count=len(present_ids), items=items)
 
+
+# ---------- Daily Analytics Endpoints ----------
+class SectionDailyItem(BaseModel):
+    section_id: str
+    name: str
+    total_students: int
+    present_count: int
+    percent: float
+
+class SectionDailyResponse(BaseModel):
+    date: str
+    items: List[SectionDailyItem]
+    total_sections: int
+    total_students: int
+    total_present: int
+
+@api.get("/attendance/sections/daily", response_model=SectionDailyResponse)
+async def sections_daily(date: Optional[str] = None, school_id: Optional[str] = None, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN'))):
+    day = (date or datetime.now(timezone.utc).date().isoformat())
+    # Resolve school scope
+    target_school_id = None
+    if current['role'] in ('SCHOOL_ADMIN', 'CO_ADMIN'):
+        target_school_id = current.get('school_id')
+    elif current['role'] == 'GOV_ADMIN':
+        target_school_id = school_id
+    # Load sections in scope
+    sec_query: Dict[str, Any] = {}
+    if target_school_id:
+        sec_query['school_id'] = target_school_id
+    sections = await db.sections.find(sec_query).to_list(10000)
+    sec_ids = [s['id'] for s in sections]
+    if not sec_ids:
+        return SectionDailyResponse(date=day, items=[], total_sections=0, total_students=0, total_present=0)
+    # Students per section
+    st_agg = db.students.aggregate([
+        {"$match": {"section_id": {"$in": sec_ids}}},
+        {"$group": {"_id": "$section_id", "total": {"$sum": 1}}}
+    ])
+    students_map: Dict[str, int] = {}
+    async for g in st_agg:
+        students_map[g['_id']] = int(g['total'])
+    # Present per section on day
+    att_agg = db.attendance.aggregate([
+        {"$match": {"section_id": {"$in": sec_ids}, "date": day, "status": "Present"}},
+        {"$group": {"_id": "$section_id", "present": {"$sum": 1}}}
+    ])
+    present_map: Dict[str, int] = {}
+    async for g in att_agg:
+        present_map[g['_id']] = int(g['present'])
+    items: List[SectionDailyItem] = []
+    total_students = 0
+    total_present = 0
+    for s in sections:
+        tot = int(students_map.get(s['id'], 0))
+        pres = int(present_map.get(s['id'], 0))
+        pct = float(round((pres / tot) * 100, 2)) if tot > 0 else 0.0
+        items.append(SectionDailyItem(section_id=s['id'], name=(s.get('name') or 'Section'), total_students=tot, present_count=pres, percent=pct))
+        total_students += tot
+        total_present += pres
+    return SectionDailyResponse(date=day, items=items, total_sections=len(items), total_students=total_students, total_present=total_present)
+
+class TeacherDailyItem(BaseModel):
+    teacher_id: str
+    name: str
+    email: Optional[EmailStr] = None
+    section_id: Optional[str] = None
+    section_name: Optional[str] = None
+    total_students: Optional[int] = None
+    present_count: int
+    percent: Optional[float] = None
+
+class TeacherDailyResponse(BaseModel):
+    date: str
+    items: List[TeacherDailyItem]
+    total_teachers: int
+    total_present: int
+
+@api.get("/attendance/teachers/daily", response_model=TeacherDailyResponse)
+async def teachers_daily(date: Optional[str] = None, school_id: Optional[str] = None, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN'))):
+    day = (date or datetime.now(timezone.utc).date().isoformat())
+    # Determine teacher scope
+    teacher_query: Dict[str, Any] = {"role": "TEACHER"}
+    if current['role'] in ('SCHOOL_ADMIN', 'CO_ADMIN'):
+        teacher_query['school_id'] = current.get('school_id')
+    elif current['role'] == 'GOV_ADMIN' and school_id:
+        teacher_query['school_id'] = school_id
+    teachers = await db.users.find(teacher_query).to_list(10000)
+    teacher_ids = [t['id'] for t in teachers]
+    if not teacher_ids:
+        return TeacherDailyResponse(date=day, items=[], total_teachers=0, total_present=0)
+    # Present counts per teacher for the day
+    att_agg = db.attendance.aggregate([
+        {"$match": {"teacher_id": {"$in": teacher_ids}, "date": day, "status": "Present"}},
+        {"$group": {"_id": "$teacher_id", "present": {"$sum": 1}}}
+    ])
+    present_by_teacher: Dict[str, int] = {}
+    async for g in att_agg:
+        present_by_teacher[g['_id']] = int(g['present'])
+    # Map sections
+    section_map: Dict[str, Dict[str, Any]] = {}
+    sec_ids = [t.get('section_id') for t in teachers if t.get('section_id')]
+    if sec_ids:
+        secs = await db.sections.find({"id": {"$in": sec_ids}}).to_list(10000)
+        for s in secs:
+            section_map[s['id']] = s
+    # Student totals per teacher's section
+    totals_by_section: Dict[str, int] = {}
+    if sec_ids:
+        st_agg = db.students.aggregate([
+            {"$match": {"section_id": {"$in": sec_ids}}},
+            {"$group": {"_id": "$section_id", "total": {"$sum": 1}}}
+        ])
+        async for g in st_agg:
+            totals_by_section[g['_id']] = int(g['total'])
+    items: List[TeacherDailyItem] = []
+    total_present = 0
+    for t in teachers:
+        pres = int(present_by_teacher.get(t['id'], 0))
+        total_present += pres
+        sec_id = t.get('section_id')
+        sec = section_map.get(sec_id) if sec_id else None
+        tot = totals_by_section.get(sec_id) if sec_id else None
+        pct = (round((pres / tot) * 100, 2) if tot and tot > 0 else None)
+        items.append(TeacherDailyItem(
+            teacher_id=t['id'], name=t.get('full_name') or 'Teacher', email=t.get('email'),
+            section_id=sec_id, section_name=(sec.get('name') if sec else None), total_students=(int(tot) if isinstance(tot, int) else None),
+            present_count=pres, percent=pct
+        ))
+    return TeacherDailyResponse(date=day, items=items, total_teachers=len(items), total_present=total_present)
+
+class SchoolDailyItem(BaseModel):
+    school_id: str
+    name: str
+    total_students: int
+    present_count: int
+    percent: float
+
+class SchoolDailyResponse(BaseModel):
+    date: str
+    items: List[SchoolDailyItem]
+    total_schools: int
+    total_students: int
+    total_present: int
+
+@api.get("/attendance/schools/daily", response_model=SchoolDailyResponse)
+async def schools_daily(date: Optional[str] = None, current: dict = Depends(require_roles('GOV_ADMIN'))):
+    day = (date or datetime.now(timezone.utc).date().isoformat())
+    schools = await db.schools.find({}).to_list(10000)
+    if not schools:
+        return SchoolDailyResponse(date=day, items=[], total_schools=0, total_students=0, total_present=0)
+    # Map school -> section_ids
+    school_sections: Dict[str, List[str]] = {}
+    secs = await db.sections.find({}).to_list(100000)
+    for s in secs:
+        school_sections.setdefault(s['school_id'], []).append(s['id'])
+    # Students totals per section
+    st_agg = db.students.aggregate([
+        {"$group": {"_id": "$section_id", "total": {"$sum": 1}}}
+    ])
+    students_per_section: Dict[str, int] = {}
+    async for g in st_agg:
+        students_per_section[g['_id']] = int(g['total'])
+    # Present per section on day
+    att_agg = db.attendance.aggregate([
+        {"$match": {"date": day, "status": "Present"}},
+        {"$group": {"_id": "$section_id", "present": {"$sum": 1}}}
+    ])
+    present_per_section: Dict[str, int] = {}
+    async for g in att_agg:
+        present_per_section[g['_id']] = int(g['present'])
+    items: List[SchoolDailyItem] = []
+    total_students = 0
+    total_present = 0
+    for sch in schools:
+        sec_ids2 = school_sections.get(sch['id'], [])
+        tot = sum(students_per_section.get(x, 0) for x in sec_ids2)
+        pres = sum(present_per_section.get(x, 0) for x in sec_ids2)
+        pct = float(round((pres / tot) * 100, 2)) if tot > 0 else 0.0
+        items.append(SchoolDailyItem(school_id=sch['id'], name=sch.get('name') or 'School', total_students=tot, present_count=pres, percent=pct))
+        total_students += tot
+        total_present += pres
+    return SchoolDailyResponse(date=day, items=items, total_schools=len(items), total_students=total_students, total_present=total_present)
+
+class TrendsDayItem(BaseModel):
+    date: str
+    total_students: int
+    present_count: int
+    percent: float
+
+class TrendsResponse(BaseModel):
+    items: List[TrendsDayItem]
+
+@api.get("/attendance/trends", response_model=TrendsResponse)
+async def attendance_trends(from_: Optional[str] = None, to: Optional[str] = None, school_id: Optional[str] = None, current: dict = Depends(require_roles('GOV_ADMIN'))):
+    # Build date range inclusive
+    today = datetime.now(timezone.utc).date()
+    start = datetime.fromisoformat((from_ or today.isoformat())) if from_ else datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
+    end = datetime.fromisoformat((to or today.isoformat())) if to else datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=timezone.utc)
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=timezone.utc)
+    if end < start:
+        start, end = end, start
+    # Preload sections scope if school_id supplied
+    sec_scope: Optional[List[str]] = None
+    if school_id:
+        secs = await db.sections.find({"school_id": school_id}).to_list(100000)
+        sec_scope = [s['id'] for s in secs]
+    # Students totals (constant across days) within scope if any
+    total_students = 0
+    if sec_scope is None:
+        total_students = await db.students.count_documents({})
+    else:
+        total_students = await db.students.count_documents({"section_id": {"$in": sec_scope}})
+    # Build per-day present counts using attendance
+    days: List[TrendsDayItem] = []
+    cur_date = start.date()
+    last_date = end.date()
+    while cur_date <= last_date:
+        dstr = cur_date.isoformat()
+        match_q: Dict[str, Any] = {"date": dstr, "status": "Present"}
+        if sec_scope is not None:
+            match_q["section_id"] = {"$in": sec_scope}
+        present = await db.attendance.count_documents(match_q)
+        pct = float(round((present / total_students) * 100, 2)) if total_students > 0 else 0.0
+        days.append(TrendsDayItem(date=dstr, total_students=int(total_students), present_count=int(present), percent=pct))
+        cur_date = (datetime.fromisoformat(dstr) + timedelta(days=1)).date()
+    return TrendsResponse(items=days)
+
+
 @api.delete("/sections/{section_id}")
 async def delete_section(section_id: str, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
     sec = await db.sections.find_one({"id": section_id})
