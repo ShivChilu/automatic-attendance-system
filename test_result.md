@@ -384,7 +384,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Fix teacher/co-admin creation: remove role in request body and ensure endpoint accepts simplified payload"
+    - "Validation error message format for frontend compatibility"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
