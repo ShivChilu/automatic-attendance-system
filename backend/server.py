@@ -929,29 +929,10 @@ async def list_sections(school_id: Optional[str] = None, current: dict = Depends
     return [Section(**i) for i in items]
 
 # Students
-@api.post("/students/create", response_model=Student)
-async def create_student(payload: StudentCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN'))):
-    # Validate section belongs to current school if school admin/co-admin
-    sec = await db.sections.find_one({"id": payload.section_id})
-    if not sec:
-        raise HTTPException(status_code=404, detail="Section not found")
-    if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN') and sec.get("school_id") != current.get("school_id"):
-        raise HTTPException(status_code=403, detail="Cannot add student to another school's section")
-    sid = str(uuid.uuid4())
-    student_code = payload.student_code or payload.roll_no or sid[:8]
-    doc = {
-        "id": sid,
-        "name": payload.name,
-        "student_code": student_code,
-        "roll_no": payload.roll_no or payload.student_code,
-        "section_id": payload.section_id,
-        "parent_mobile": payload.parent_mobile,
-        "has_twin": payload.has_twin,
-        "twin_group_id": payload.twin_group_id,
-        "created_at": now_iso(),
-    }
-    await db.students.insert_one(doc)
-    return Student(**doc)
+@api.post("/students/create")
+async def create_student_disabled():
+    """Disabled endpoint - students can only be created via face enrollment"""
+    raise HTTPException(status_code=405, detail="Disabled: Use /api/enrollment/students for face enrollment only")
 
 @api.put("/students/{student_id}", response_model=Student)
 async def update_student(student_id: str, payload: StudentUpdate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
