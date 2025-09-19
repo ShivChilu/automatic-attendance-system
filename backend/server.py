@@ -58,6 +58,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Health check root endpoint to satisfy platform monitors
+@app.get("/")
+async def root_health():
+    return {"ok": True, "service": "attendance-backend", "status": "healthy"}
+
+
 # Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("backend")
