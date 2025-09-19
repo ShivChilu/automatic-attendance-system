@@ -271,7 +271,7 @@ class ValidationErrorTester:
             detail = response.get('detail')
             if isinstance(detail, str):
                 print(f"✅ Co-admin validation error detail is STRING: '{detail}'")
-                has_full_name_error = 'full_name' in detail and 'field required' in detail
+                has_full_name_error = 'full_name' in detail and ('field required' in detail.lower() or 'Field required' in detail)
                 has_email_error = 'email' in detail and ('valid email' in detail or 'email address' in detail)
                 
                 if has_full_name_error and has_email_error:
