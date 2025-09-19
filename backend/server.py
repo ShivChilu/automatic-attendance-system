@@ -601,17 +601,47 @@ async def list_students(
         pass
 
     def normalize_student(d: Dict[str, Any]) -> Dict[str, Any]:
+        # Coerce all fields to expected types; ignore legacy/extra fields
+        sid = str(d.get("id", ""))
+        name = str(d.get("name", ""))
+        student_code = d.get("student_code") or d.get("roll_no") or (sid[:8] if sid else "")
+        roll_no = d.get("roll_no")
+        if roll_no is not None:
+            roll_no = str(roll_no)
+        section_id = str(d.get("section_id", ""))
+        parent_mobile = d.get("parent_mobile")
+        if parent_mobile is not None:
+            parent_mobile = str(parent_mobile)
+        has_twin_val = d.get("has_twin", False)
+        has_twin_val = bool(has_twin_val) if isinstance(has_twin_val, (bool, int)) else str(has_twin_val).lower() in ("1", "true", "yes")
+        twin_group_id = d.get("twin_group_id")
+        if twin_group_id is not None:
+            twin_group_id = str(twin_group_id)
+        twin_of = d.get("twin_of")
+        if twin_of is not None:
+            twin_of = str(twin_of)
+        created = d.get("created_at")
+        if not isinstance(created, datetime):
+            # If it's a string, try a light parse; if fails, use now
+            try:
+                if isinstance(created, str) and len(created) > 0:
+                    # Basic ISO-like fallback
+                    created = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                else:
+                    created = now_iso()
+            except Exception:
+                created = now_iso()
         return {
-            "id": d.get("id", ""),
-            "name": d.get("name", ""),
-            "student_code": d.get("student_code") or d.get("roll_no") or (d.get("id", "")[:8]),
-            "roll_no": d.get("roll_no"),
-            "section_id": d.get("section_id", ""),
-            "parent_mobile": d.get("parent_mobile"),
-            "has_twin": bool(d.get("has_twin", False)),
-            "twin_group_id": d.get("twin_group_id"),
-            "twin_of": d.get("twin_of"),
-            "created_at": d.get("created_at") or now_iso(),
+            "id": sid,
+            "name": name,
+            "student_code": str(student_code or ""),
+            "roll_no": roll_no,
+            "section_id": section_id,
+            "parent_mobile": parent_mobile,
+            "has_twin": bool(has_twin_val),
+            "twin_group_id": twin_group_id,
+            "twin_of": twin_of,
+            "created_at": created,
         }
 
     normalized = [normalize_student(i) for i in items]
