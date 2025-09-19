@@ -666,13 +666,22 @@ async def enroll_student(
     except Exception as e:
         logger.warning(f"Duplicate check failed: {e}")
 
+    # Allocate incremental roll_no per section starting from 1
+    counter = await db.counters.find_one_and_update(
+        {"_id": f"section:{section_id}:student_seq"},
+        {"$inc": {"seq": 1}},
+        upsert=True,
+        return_document=ReturnDocument.AFTER
+    )
+    next_roll = int(counter.get("seq", 1))
+
     sid = str(uuid.uuid4())
-    student_code = sid[:8]
+    student_code = str(next_roll)  # display id equal to incremental number
     doc = {
         "id": sid,
         "name": name,
         "student_code": student_code,
-        "roll_no": None,
+        "roll_no": next_roll,
         "section_id": section_id,
         "parent_mobile": parent_mobile,
         "has_twin": has_twin,
