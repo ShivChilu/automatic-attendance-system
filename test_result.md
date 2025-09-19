@@ -367,6 +367,9 @@ agent_communication:
     - agent: "testing"
       message: "Comprehensive backend API testing completed successfully. All 22 test cases passed including: Authentication (login, token validation), School Management (CRUD), Section Management (CRUD), Student Management (CRUD), User Management (teachers, co-admins, CRUD operations), Email Integration (resend credentials), Security (unauthorized access, role-based access control), Error Handling (invalid data, duplicate emails). Backend APIs are fully functional and ready for production use."
     - agent: "main"
+    - agent: "main"
+      message: "Implemented backend filter so Section-wise Students list shows only enrolled students (those with embeddings). Also wired Enrollment component to notify parent on success so UI refreshes the list for the selected section."
+
       message: "MAJOR UPDATE: Replaced entire face detection system. Now using MediaPipe Face Mesh + MobileFaceNet (TFLite) instead of MediaPipe Face Detection + DeepFace. Downloaded pre-trained MobileFaceNet TFLite model (5MB). Updated both enrollment and attendance APIs to use new system. Environment files updated. Backend restarted successfully. Need comprehensive testing of new face recognition system."
     - agent: "testing"
       message: "COMPREHENSIVE TESTING COMPLETED: All backend APIs working correctly internally. Face enrollment, attendance marking, and attendance summary APIs all functional with proper authentication and validation. CRITICAL FINDING: 405 error is NOT a backend code issue - it's an external URL routing problem. Internal API (localhost:8001/api) works perfectly, external API (smarttrack-5.preview.emergentagent.com/api) has ingress/proxy routing issues. Backend code is correct and functional."
