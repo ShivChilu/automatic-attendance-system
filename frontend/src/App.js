@@ -11,6 +11,8 @@ import EnrollmentWithFace from "./components/EnrollmentWithFace";
 import TeacherScan from "./components/TeacherScan";
 import Sidebar from "./components/Sidebar";
 import TeacherAttendanceFlow from "./components/TeacherAttendanceFlow.jsx";
+import AnalyticsGov from "./components/AnalyticsGov.jsx";
+import AnalyticsSchool from "./components/AnalyticsSchool.jsx";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -45,7 +47,6 @@ function useMySchool(enabled) {
   return school;
 }
 
-// Modern Statistics Card Component
 function StatsCard({ title, value, icon, gradient, trend }) {
   return (
     <div className="card narrow animate-scale-in">
@@ -62,7 +63,6 @@ function StatsCard({ title, value, icon, gradient, trend }) {
   );
 }
 
-// Hero Section Component
 function HeroSection({ title, subtitle, backgroundImage }) {
   return (
     <div className="card wide animate-fade-in" style={{ 
@@ -369,6 +369,8 @@ function GovAdmin({ me, currentSection, onSectionChange }) {
           </div>
         </div>
       );
+    } else if (currentSection === 'analytics') {
+      return <AnalyticsGov />;
     } else {
       return (
         <>
@@ -767,6 +769,8 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
           </form>
         </div>
       );
+    } else if (currentSection === 'school-stats') {
+      return <AnalyticsSchool />;
     } else {
       return (
         <>
@@ -776,14 +780,8 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
             backgroundImage="https://images.unsplash.com/photo-1580582932707-520aed937b7b"
           />
           <div className="grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:'1rem'}}>
-            <div onClick={()=>onSectionChange('sections')} style={{cursor:'pointer'}}>
-              <StatsCard title="Sections" value={sections.length} gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" />
-            </div>
-            <div onClick={()=>onSectionChange('students')} style={{cursor:'pointer'}}>
-              <StatsCard title="Students" value={students.length} gradient="linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" />
-            </div>
-            <div onClick={()=>onSectionChange('teachers')} style={{cursor:'pointer'}}>
-              <StatsCard title="Teachers" value={teachers.length} gradient="linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" />
+            <div onClick={()=>onSectionChange('school-stats')} style={{cursor:'pointer'}}>
+              <StatsCard title="Analytics" value="View" />
             </div>
           </div>
           <div className="card wide animate-slide-in" style={{marginTop:'1rem'}}>
