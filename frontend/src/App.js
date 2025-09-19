@@ -521,7 +521,8 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
         try {
           // After enrollment, focus the selected section and refresh students list
           setSelectedSec(enrolled.section_id);
-          const list = await api.get(`/students?section_id=${enrolled.section_id}`);
+          // Show both enrolled and non-enrolled students to ensure visibility immediately after enrollment
+          const list = await api.get(`/students?section_id=${enrolled.section_id}&enrolled_only=false`);
           setStudents(list.data || []);
           // Optionally navigate to Students tab to show the updated list
           // onSectionChange('students');
