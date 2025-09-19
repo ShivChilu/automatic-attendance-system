@@ -96,6 +96,23 @@ class UserPublic(BaseModel):
     section_id: Optional[str] = None
     created_at: datetime
 
+# Endpoint-specific request models (avoid requiring 'role' in body)
+class TeacherCreateRequest(BaseModel):
+    full_name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    subject: Optional[str] = None
+    section_id: Optional[str] = None
+    password: Optional[str] = None
+    school_id: Optional[str] = None  # only for GOV_ADMIN usage
+
+class CoadminCreateRequest(BaseModel):
+    full_name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    password: Optional[str] = None
+    school_id: Optional[str] = None  # only for GOV_ADMIN usage
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
