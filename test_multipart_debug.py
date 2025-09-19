@@ -11,7 +11,7 @@ def test_json_post_to_enroll():
     """Test if JSON POST works to the same endpoint"""
     print("🔍 Testing JSON POST to /api/students/enroll")
     
-    url = "https://attend-tracker-45.preview.emergentagent.com/api/students/enroll"
+    url = "https://teacher-reg-fix.preview.emergentagent.com/api/students/enroll"
     headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer test_token'  # Invalid token, but should get past routing
@@ -44,7 +44,7 @@ def test_other_multipart_endpoint():
     """Test if multipart works on attendance/mark endpoint"""
     print("\n🔍 Testing multipart POST to /api/attendance/mark")
     
-    url = "https://attend-tracker-45.preview.emergentagent.com/api/attendance/mark"
+    url = "https://teacher-reg-fix.preview.emergentagent.com/api/attendance/mark"
     headers = {
         'Authorization': 'Bearer test_token'  # Invalid token
     }

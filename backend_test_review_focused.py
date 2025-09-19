@@ -13,7 +13,7 @@ import base64
 from datetime import datetime
 
 class ReviewFocusedTester:
-    def __init__(self, base_url="https://7deae9a6-0c3c-47cc-87e0-a6a20bbe2f22.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://teacher-reg-fix.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.gov_token = None
         self.school_token = None
