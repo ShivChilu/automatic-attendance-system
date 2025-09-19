@@ -87,7 +87,8 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
       if (onEnrolled) {
         try { onEnrolled(res.data); } catch (e) {}
       }
-      setName(""); setParentMobile(""); setHasTwin(false); setTwinGroupId(""); setShots([]);
+      // Reset fields but keep section selected
+      setName(""); setParentMobile(""); setHasTwin(false); setTwinGroupId(""); setTwinOf(""); setTwinSearch(""); setTwinResults([]); setSelectedTwin(null); setShots([]);
     } catch (err) {
       const errorMsg = err?.response?.data?.detail || "Enrollment failed";
       setMessage(`❌ ${errorMsg}`);
