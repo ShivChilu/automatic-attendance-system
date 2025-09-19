@@ -5,14 +5,13 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
-export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
-  const [recent, setRecent] = useState([]); // [{name, section_id, imgUrl}]
-
+export default function EnrollmentWithFace({ sections = [] }) {
   const [selectedSec, setSelectedSec] = useState("");
   const [name, setName] = useState("");
   const [parentMobile, setParentMobile] = useState("");
   const [hasTwin, setHasTwin] = useState(false);
   const [twinGroupId, setTwinGroupId] = useState("");
+  const [twinOf, setTwinOf] = useState("");
   const [facingMode, setFacingMode] = useState("user");
   const [shots, setShots] = useState([]); // { blob, url }
   const [loading, setLoading] = useState(false);
@@ -54,15 +53,10 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
       if (parentMobile) fd.append("parent_mobile", parentMobile);
       fd.append("has_twin", hasTwin ? "true" : "false");
       if (twinGroupId) fd.append("twin_group_id", twinGroupId);
+      if (hasTwin && twinOf) fd.append("twin_of", twinOf);
       shots.forEach((s, i) => fd.append("images", s.blob, `shot_${i+1}.jpg`));
       const res = await api.post("/enrollment/students", fd);
       setMessage(`✅ Successfully enrolled ${res.data.name}! Face embeddings created: ${res.data.embeddings_count}`);
-      if (shots[0]?.url) {
-        setRecent(prev => [{ name: res.data.name, section_id: res.data.section_id, imgUrl: shots[0].url }, ...prev].slice(0,6));
-      }
-      if (onEnrolled) {
-        onEnrolled({ id: res.data.id, name: res.data.name, section_id: res.data.section_id, parent_mobile: res.data.parent_mobile });
-      }
       setName(""); setParentMobile(""); setHasTwin(false); setTwinGroupId(""); setShots([]);
     } catch (err) {
       const errorMsg = err?.response?.data?.detail || "Enrollment failed";
@@ -148,7 +142,7 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
 
           <div className="form_row">
             <Label className="form_label">👯 Twin Settings</Label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
               <label style={{ display:'flex', alignItems:'center', gap:'8px', padding: '12px', background: '#f0f9ff', borderRadius: '12px', border: '2px solid #dbeafe' }}>
                 <input 
                   type="checkbox" 
@@ -156,8 +150,44 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
                   onChange={(e)=>setHasTwin(e.target.checked)}
                   style={{ width: '18px', height: '18px' }}
                 /> 
-                <span className="text-sm font-medium">Has Twin</span>
+                <span className="text-sm font-medium">Is Twin?</span>
               </label>
+              <div>
+                <Input 
+                  value={twinOf} 
+                  onChange={(e)=>setTwinOf(e.target.value)} 
+                  placeholder="Twin sibling Student ID"
+                  disabled={!hasTwin}
+                  style={{ 
+                    border: '2px solid #dbeafe',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    opacity: hasTwin ? 1 : 0.5,
+                    marginBottom: '8px'
+                  }}
+                />
+                {hasTwin && (
+                  <button
+                    type="button"
+                    className="btn_secondary"
+                    onClick={async ()=>{
+                      try {
+                        const q = prompt('Search twin by name/roll/student code:');
+                        if (!q) return;
+                        const res = await api.get('/students/search', { params: { query: q, section_id: selectedSec || undefined } });
+                        if ((res.data.items||[]).length === 0) {
+                          alert('No students found');
+                          return;
+                        }
+                        const pick = prompt('Enter the Student ID from the list:\n' + res.data.items.map(it => `${it.name} (${it.id}) ${it.roll_no?'- Roll: '+it.roll_no:''}`).join('\n'));
+                        if (pick) setTwinOf(pick);
+                      } catch (e) { alert('Search failed'); }
+                    }}
+                    style={{ marginTop: '4px' }}
+                    disabled={!selectedSec}
+                  >🔎 Search</button>
+                )}
+              </div>
               <Input 
                 value={twinGroupId} 
                 onChange={(e)=>setTwinGroupId(e.target.value)} 
@@ -272,23 +302,6 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
           </Button>
         </div>
       </form>
-
-      {/* Recently Enrolled Preview */}
-      {recent.length > 0 && (
-        <div className="mt-8">
-          <Label className="form_label">🧒 Recently Enrolled</Label>
-          <div className="thumbs">
-            {recent.map((r, i) => (
-              <div key={i} className="thumb">
-                <img src={r.imgUrl} alt={r.name} />
-                <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                  {r.name}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Additional CSS for thumbs styling */}
       <style jsx>{`
