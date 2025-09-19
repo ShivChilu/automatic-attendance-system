@@ -508,8 +508,12 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
   const loadStudents = async (secId) => {
     setSelectedSec(secId);
     if (!secId) { setStudents([]); return; }
-    const list = await api.get(`/students?section_id=${secId}`);
-    setStudents(list.data || []);
+    try {
+      const list = await api.get(`/students?section_id=${secId}&enrolled_only=false`);
+      setStudents(Array.isArray(list.data) ? list.data : []);
+    } catch (e) {
+      setStudents([]);
+    }
   };
 
   const isSchoolAdmin = me?.role === 'SCHOOL_ADMIN';
