@@ -369,7 +369,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Review Testing Completed Successfully"
+    - "Focused Legacy Data Testing Completed Successfully"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
