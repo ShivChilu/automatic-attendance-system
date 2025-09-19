@@ -439,6 +439,13 @@ async def api_root():
     return {"message": "API ok", "debug": "root route working"}
 
 @api.post("/status", response_model=StatusCheck)
+
+# Lightweight test endpoint for external health probes
+@api.get("/test-route")
+async def api_test_route():
+    return {"ok": True, "path": "/api/test-route"}
+
+
 async def create_status_check(input: StatusCheckCreate):
     status_obj = StatusCheck(client_name=input.client_name)
     await db.status_checks.insert_one(status_obj.model_dump())
