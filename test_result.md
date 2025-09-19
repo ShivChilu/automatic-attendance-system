@@ -369,12 +369,10 @@ metadata:
 
 test_plan:
   current_focus:
-  - "Review Testing Completed"
+    - "Review Testing Completed Successfully"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
-
-  - "Fix: Students list returns only enrolled students and frontend refresh after enrollment"
 
 agent_communication:
     - agent: "main"
