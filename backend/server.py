@@ -1099,9 +1099,7 @@ async def create_teacher(payload: TeacherCreateRequest, current: dict = Depends(
     )
 
 @api.post("/users/coadmins", response_model=UserPublic)
-async def create_coadmin(payload: UserCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN'))):
-    if payload.role != 'CO_ADMIN':
-        raise HTTPException(status_code=400, detail="role must be CO_ADMIN for this endpoint")
+async def create_coadmin(payload: CoadminCreateRequest, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN'))):
     school_id = payload.school_id or current.get("school_id")
     if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN'):
         school_id = current.get("school_id")
