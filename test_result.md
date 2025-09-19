@@ -105,6 +105,18 @@
 user_problem_statement: "School Face Recognition Attendance System: Replace existing face detection system with MediaPipe Face Mesh + MobileFaceNet (TFLite) for better performance and offline capability. Implement hybrid approach for real-time face recognition attendance marking in schools."
 
 backend:
+  - task: "Teacher/Co-Admin creation payload handling"
+    implemented: true
+    working: false
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+          agent: "main"
+          comment: "Updated endpoints to accept simplified payloads (no role required) via TeacherCreateRequest and CoadminCreateRequest. Expect frontend to stop sending role to avoid [object Object] alert. Needs backend test to verify contracts."
+  
   - task: "Environment Configuration"
     implemented: true
     working: true
