@@ -309,7 +309,7 @@ class EmbeddingsFilterTester:
         """Verify that both students exist in MongoDB"""
         self.log("=== VERIFYING MONGODB DATA ===")
         
-        if not self.db:
+        if self.db is None:
             self.log("❌ No MongoDB connection available")
             return False
         
