@@ -573,7 +573,11 @@ async def update_section(section_id: str, payload: SectionUpdate, current: dict 
 # ---------- Student Face Enrollment & Attendance ----------
 # List students
 @api.get("/students", response_model=List[Student])
-async def list_students(section_id: Optional[str] = None, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER'))):
+async def list_students(
+    section_id: Optional[str] = None,
+    enrolled_only: Optional[bool] = False,
+    current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER')),
+):
     query: Dict[str, Any] = {}
     if section_id:
         query["section_id"] = section_id
@@ -585,8 +589,9 @@ async def list_students(section_id: Optional[str] = None, current: dict = Depend
             raise HTTPException(status_code=403, detail="Not allowed for this section")
         if not section_id:
             query["section_id"] = {"$in": list(allowed_sec_ids)}
-    # Only return students that have face embeddings (enrolled)
-    query["embeddings.0"] = {"$exists": True}
+    # If explicitly requested, only return students that have face embeddings (enrolled)
+    if enrolled_only:
+        query["embeddings.0"] = {"$exists": True}
     items = await db.students.find(query).to_list(10000)
     return [Student(**i) for i in items]
 
