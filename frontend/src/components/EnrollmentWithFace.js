@@ -18,6 +18,32 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
   const [message, setMessage] = useState("");
   const [sampleUrl, setSampleUrl] = useState("https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=256");
 
+  // Twin search state
+  const [twinSearch, setTwinSearch] = useState("");
+  const [twinResults, setTwinResults] = useState([]);
+  const [twinSearching, setTwinSearching] = useState(false);
+  const [selectedTwin, setSelectedTwin] = useState(null);
+
+  // Debounced search for twins within the same section
+  useEffect(() => {
+    let t = null;
+    if (!hasTwin) { setTwinResults([]); setTwinSearch(""); setSelectedTwin(null); return; }
+    if (!selectedSec) return;
+    if ((twinSearch || "").trim().length < 2) { setTwinResults([]); return; }
+    setTwinSearching(true);
+    t = setTimeout(async () => {
+      try {
+        const res = await api.get('/students/search', { params: { query: twinSearch.trim(), section_id: selectedSec } });
+        setTwinResults(res.data.items || []);
+      } catch (e) {
+        setTwinResults([]);
+      } finally {
+        setTwinSearching(false);
+      }
+    }, 300);
+    return () => t && clearTimeout(t);
+  }, [twinSearch, hasTwin, selectedSec]);
+
   const canSubmit = useMemo(() => name && selectedSec && shots.length >= 1, [name, selectedSec, shots.length]);
 
   const onCapture = (blob, url) => {
