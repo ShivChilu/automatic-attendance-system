@@ -369,7 +369,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Focused Legacy Data Testing Completed Successfully"
+    - "Fix teacher/co-admin creation: remove role in request body and ensure endpoint accepts simplified payload"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
