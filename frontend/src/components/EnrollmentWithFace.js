@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
-export default function EnrollmentWithFace({ sections = [] }) {
+export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
   const [selectedSec, setSelectedSec] = useState("");
   const [name, setName] = useState("");
   const [parentMobile, setParentMobile] = useState("");
