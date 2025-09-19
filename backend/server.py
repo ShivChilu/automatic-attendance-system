@@ -32,6 +32,23 @@ db = client[os.environ['DB_NAME']]
 app = FastAPI()
 api = APIRouter(prefix="/api")
 
+# Make validation errors user-friendly (avoid [object Object] in frontend alerts)
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    try:
+        errs = []
+        for e in exc.errors():
+            loc = ".".join([str(x) for x in e.get("loc", [])])
+            msg = e.get("msg", "validation error")
+            errs.append(f"{loc}: {msg}")
+        message = "; ".join(errs) if errs else "Invalid request payload"
+    except Exception:
+        message = "Invalid request payload"
+    return JSONResponse(status_code=422, content={"detail": message})
+
 # CORS
 app.add_middleware(
     CORSMiddleware,
