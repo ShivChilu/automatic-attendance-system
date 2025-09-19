@@ -362,7 +362,7 @@ class EmbeddingsFilterTester:
         """Clean up test data"""
         self.log("=== CLEANING UP TEST DATA ===")
         
-        if self.db and self.student_a_id and self.student_b_id:
+        if self.db is not None and self.student_a_id and self.student_b_id:
             try:
                 self.db.students.delete_one({"id": self.student_a_id})
                 self.db.students.delete_one({"id": self.student_b_id})
