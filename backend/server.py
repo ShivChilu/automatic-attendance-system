@@ -630,6 +630,41 @@ async def enroll_student(
     if len(embeddings) < 1:
         raise HTTPException(status_code=400, detail="No face embeddings could be extracted")
 
+    # Duplicate check: compare new face against existing students in the section
+    try:
+        # Average embedding for comparison to stabilize across shots
+        def _avg(vecs: List[List[float]]) -> List[float]:
+            if not vecs:
+                return []
+            L = len(vecs[0])
+            sums = [0.0] * L
+            for v in vecs:
+                if len(v) != L:
+                    continue
+                for i in range(L):
+                    sums[i] += float(v[i])
+            return [s / max(1, len(vecs)) for s in sums]
+        new_emb = _avg(embeddings)
+        existing_students = await db.students.find({"section_id": section_id}).to_list(5000)
+        best_sim = -1.0
+        best_student = None
+        for s in existing_students:
+            s_embs = s.get("embeddings", [])
+            sims = [_cosine_sim(new_emb, e) for e in s_embs if isinstance(e, list)]
+            if sims:
+                sim = max(sims)
+                if sim > best_sim:
+                    best_sim = sim
+                    best_student = s
+        if best_student and best_sim >= 0.90:
+            # If twin_group_id is not provided, block duplicate enrollment
+            if not twin_group_id:
+                raise HTTPException(status_code=409, detail="Student already enrolled")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"Duplicate check failed: {e}")
+
     sid = str(uuid.uuid4())
     student_code = sid[:8]
     doc = {
