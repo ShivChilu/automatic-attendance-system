@@ -593,7 +593,29 @@ async def list_students(
     if enrolled_only:
         query["embeddings.0"] = {"$exists": True}
     items = await db.students.find(query).to_list(10000)
-    return [Student(**i) for i in items]
+
+    # Debug log to help diagnose empty lists in UI
+    try:
+        logger.info(f"GET /api/students -> query={query} count={len(items)}")
+    except Exception:
+        pass
+
+    def normalize_student(d: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "id": d.get("id", ""),
+            "name": d.get("name", ""),
+            "student_code": d.get("student_code") or d.get("roll_no") or (d.get("id", "")[:8]),
+            "roll_no": d.get("roll_no"),
+            "section_id": d.get("section_id", ""),
+            "parent_mobile": d.get("parent_mobile"),
+            "has_twin": bool(d.get("has_twin", False)),
+            "twin_group_id": d.get("twin_group_id"),
+            "twin_of": d.get("twin_of"),
+            "created_at": d.get("created_at") or now_iso(),
+        }
+
+    normalized = [normalize_student(i) for i in items]
+    return [Student(**i) for i in normalized]
 
 # Student search endpoint to help find twins by name/roll/student_code
 class StudentSearchItem(BaseModel):
