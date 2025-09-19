@@ -167,12 +167,12 @@ class StudentUpdate(BaseModel):
 class Student(BaseModel):
     id: str
     name: str
-    student_code: str
+    student_code: str = ""
     roll_no: Optional[str] = None
     section_id: str
     parent_mobile: Optional[str] = None
-    has_twin: bool
-    twin_group_id: Optional[str]
+    has_twin: bool = False
+    twin_group_id: Optional[str] = None
     twin_of: Optional[str] = None
     created_at: datetime
 
