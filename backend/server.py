@@ -615,7 +615,22 @@ async def list_students(
         }
 
     normalized = [normalize_student(i) for i in items]
-    return [Student(**i) for i in normalized]
+
+    # Build response robustly: skip any malformed docs instead of 500
+    result: List[Student] = []
+    for n in normalized:
+        try:
+            # Force proper types to avoid pydantic failures from legacy docs
+            n["student_code"] = str(n.get("student_code") or "")
+            n["has_twin"] = bool(n.get("has_twin", False))
+            n["twin_group_id"] = n.get("twin_group_id") or None
+            n["twin_of"] = n.get("twin_of") or None
+            # created_at normalization handled above
+            result.append(Student(**n))
+        except Exception as e:
+            logger.error(f"Skipping malformed student doc id={n.get('id')} error={e}")
+            continue
+    return result
 
 # Student search endpoint to help find twins by name/roll/student_code
 class StudentSearchItem(BaseModel):
