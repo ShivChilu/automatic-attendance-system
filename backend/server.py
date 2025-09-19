@@ -681,7 +681,7 @@ async def enroll_student(
         "id": sid,
         "name": name,
         "student_code": student_code,
-        "roll_no": next_roll,
+        "roll_no": str(next_roll),
         "section_id": section_id,
         "parent_mobile": parent_mobile,
         "has_twin": has_twin,
