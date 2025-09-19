@@ -6,7 +6,6 @@ from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, UploadFi
 from fastapi.security import OAuth2PasswordBearer
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo import ReturnDocument
 from pydantic import BaseModel, Field, EmailStr
 from typing import List, Optional, Literal, Dict, Any
 from datetime import datetime, timedelta, timezone
@@ -157,6 +156,7 @@ class StudentCreate(BaseModel):
     parent_mobile: Optional[str] = None
     has_twin: bool = False
     twin_group_id: Optional[str] = None
+    twin_of: Optional[str] = None  # link to sibling student id
 
 class StudentUpdate(BaseModel):
     name: Optional[str] = None
@@ -173,6 +173,7 @@ class Student(BaseModel):
     parent_mobile: Optional[str] = None
     has_twin: bool
     twin_group_id: Optional[str]
+    twin_of: Optional[str] = None
     created_at: datetime
 
 # ---------- Utility functions ----------
@@ -584,9 +585,44 @@ async def list_students(section_id: Optional[str] = None, current: dict = Depend
             raise HTTPException(status_code=403, detail="Not allowed for this section")
         if not section_id:
             query["section_id"] = {"$in": list(allowed_sec_ids)}
-    # Only return students who have completed face enrollment (embeddings exist and non-empty)
-    query["embeddings.0"] = {"$exists": True}
     items = await db.students.find(query).to_list(10000)
+
+# Student search endpoint to help find twins by name/roll/student_code
+class StudentSearchItem(BaseModel):
+    id: str
+    name: str
+    section_id: str
+    roll_no: Optional[str] = None
+    student_code: Optional[str] = None
+
+class StudentSearchResponse(BaseModel):
+    items: List[StudentSearchItem]
+
+@api.get("/students/search", response_model=StudentSearchResponse)
+async def search_students(query: str, section_id: Optional[str] = None, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER'))):
+    # Build base filter
+    flt: Dict[str, Any] = {
+        "$or": [
+            {"name": {"$regex": query, "$options": "i"}},
+            {"roll_no": {"$regex": query, "$options": "i"}},
+            {"student_code": {"$regex": query, "$options": "i"}},
+        ]
+    }
+
+    # Scope to section if provided
+    if section_id:
+        flt["section_id"] = section_id
+    else:
+        # For school roles/teacher, restrict to their school's sections
+        if current.get("role") in ("SCHOOL_ADMIN", "CO_ADMIN", "TEACHER") and current.get("school_id"):
+            secs = await db.sections.find({"school_id": current.get("school_id")}).to_list(10000)
+            allowed = [s["id"] for s in secs]
+            flt["section_id"] = {"$in": allowed}
+
+    docs = await db.students.find(flt).limit(25).to_list(100)
+    items = [StudentSearchItem(id=d["id"], name=d["name"], section_id=d["section_id"], roll_no=d.get("roll_no"), student_code=d.get("student_code")) for d in docs]
+    return {"items": items}
+
     return [Student(**i) for i in items]
 
 
@@ -596,6 +632,8 @@ class StudentEnrollResponse(BaseModel):
     section_id: str
     parent_mobile: Optional[str] = None
     embeddings_count: int
+    has_twin: bool
+    twin_of: Optional[str] = None
 
 @api.post("/enrollment/students", response_model=StudentEnrollResponse)
 async def enroll_student(
@@ -604,6 +642,7 @@ async def enroll_student(
     parent_mobile: Optional[str] = Form(None),
     has_twin: bool = Form(False),
     twin_group_id: Optional[str] = Form(None),
+    twin_of: Optional[str] = Form(None),
     images: List[UploadFile] = File(...),
     current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN')),
 ):
@@ -631,66 +670,41 @@ async def enroll_student(
     if len(embeddings) < 1:
         raise HTTPException(status_code=400, detail="No face embeddings could be extracted")
 
-    # Duplicate check: compare new face against existing students in the section
-    try:
-        # Average embedding for comparison to stabilize across shots
-        def _avg(vecs: List[List[float]]) -> List[float]:
-            if not vecs:
-                return []
-            L = len(vecs[0])
-            sums = [0.0] * L
-            for v in vecs:
-                if len(v) != L:
-                    continue
-                for i in range(L):
-                    sums[i] += float(v[i])
-            return [s / max(1, len(vecs)) for s in sums]
-        new_emb = _avg(embeddings)
-        existing_students = await db.students.find({"section_id": section_id}).to_list(5000)
-        best_sim = -1.0
-        best_student = None
-        for s in existing_students:
-            s_embs = s.get("embeddings", [])
-            sims = [_cosine_sim(new_emb, e) for e in s_embs if isinstance(e, list)]
-            if sims:
-                sim = max(sims)
-                if sim > best_sim:
-                    best_sim = sim
-                    best_student = s
-        if best_student and best_sim >= 0.90:
-            # If twin_group_id is not provided, block duplicate enrollment
-            if not twin_group_id:
-                raise HTTPException(status_code=409, detail="Student already enrolled")
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.warning(f"Duplicate check failed: {e}")
-
-    # Allocate incremental roll_no per section starting from 1
-    counter = await db.counters.find_one_and_update(
-        {"_id": f"section:{section_id}:student_seq"},
-        {"$inc": {"seq": 1}},
-        upsert=True,
-        return_document=ReturnDocument.AFTER
-    )
-    next_roll = int(counter.get("seq", 1))
-
     sid = str(uuid.uuid4())
-    student_code = str(next_roll)  # display id equal to incremental number
+    student_code = sid[:8]
+
+    # If twin_of provided, validate it belongs to same section and exists
+    if twin_of:
+        other = await db.students.find_one({"id": twin_of})
+        if not other:
+            raise HTTPException(status_code=404, detail="Provided twin_of student not found")
+        if other.get("section_id") != section_id:
+            raise HTTPException(status_code=400, detail="Twin must be in the same section")
+        has_twin = True
+        # If no twin_group_id, inherit or create
+        if not twin_group_id:
+            twin_group_id = other.get("twin_group_id") or other.get("id")
+
     doc = {
         "id": sid,
         "name": name,
         "student_code": student_code,
-        "roll_no": next_roll,
+        "roll_no": None,
         "section_id": section_id,
         "parent_mobile": parent_mobile,
-        "has_twin": has_twin,
+        "has_twin": bool(has_twin),
         "twin_group_id": twin_group_id,
+        "twin_of": twin_of,
         "embeddings": embeddings,
         "created_at": now_iso(),
     }
     await db.students.insert_one(doc)
-    return StudentEnrollResponse(id=sid, name=name, section_id=section_id, parent_mobile=parent_mobile, embeddings_count=len(embeddings))
+
+    # If twin_of provided and the other twin has no twin_of, update it to link back
+    if twin_of and other and not other.get("twin_of"):
+        await db.students.update_one({"id": twin_of}, {"$set": {"twin_of": sid, "has_twin": True, "twin_group_id": doc["twin_group_id"]}})
+
+    return StudentEnrollResponse(id=sid, name=name, section_id=section_id, parent_mobile=parent_mobile, embeddings_count=len(embeddings), has_twin=bool(has_twin), twin_of=twin_of)
 
 # Test route to debug route registration
 @api.get("/test-route")
@@ -727,17 +741,44 @@ class AttendanceMarkResponse(BaseModel):
     student_name: Optional[str] = None
     similarity: Optional[float] = None
     twin_conflict: bool = False
+    twin_candidates: Optional[List[Dict[str, str]]] = None  # when confirmation is needed
 
 @api.post("/attendance/mark", response_model=AttendanceMarkResponse)
 async def mark_attendance(
     image: UploadFile = File(...),
     section_id: Optional[str] = Form(None),
+    confirmed_student_id: Optional[str] = Form(None),
     current: dict = Depends(require_roles('TEACHER')),
 ):
     # Determine section to mark against: provided or teacher's default
     chosen_section = section_id or current.get("section_id")
     if not chosen_section:
         raise HTTPException(status_code=400, detail="No section specified and teacher has no default section")
+
+    # If teacher already resolved twin ambiguity on client side
+    if confirmed_student_id:
+        stu = await db.students.find_one({"id": confirmed_student_id, "section_id": chosen_section})
+        if not stu:
+            raise HTTPException(status_code=400, detail="Confirmed student not found in section")
+        # Prevent duplicate for today
+        today = datetime.now(timezone.utc).date()
+        start = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
+        end = start + timedelta(days=1)
+        existing = await db.attendance.find_one({"student_id": confirmed_student_id, "section_id": chosen_section, "timestamp": {"$gte": start, "$lt": end}})
+        if existing:
+            return AttendanceMarkResponse(status="Already marked present", student_id=confirmed_student_id, student_name=stu["name"], similarity=None, twin_conflict=False)
+        rec = {
+            "id": str(uuid.uuid4()),
+            "date": start.date().isoformat(),
+            "section_id": chosen_section,
+            "student_id": confirmed_student_id,
+            "status": "Present",
+            "teacher_id": current["id"],
+            "timestamp": now_iso(),
+        }
+        await db.attendance.insert_one(rec)
+        return AttendanceMarkResponse(status=f"{stu['name']} is marked present, scan next student", student_id=confirmed_student_id, student_name=stu["name"], similarity=None, twin_conflict=False)
+
     # Validate section belongs to teacher's school
     sec = await db.sections.find_one({"id": chosen_section})
     if not sec or sec.get("school_id") != current.get("school_id"):
@@ -771,13 +812,41 @@ async def mark_attendance(
     if best_sim < threshold:
         return AttendanceMarkResponse(status="Not a student from this section")
 
-    # Check twin
+    # Determine twin situation
     stu = await db.students.find_one({"id": best_id})
+    twin_conflict = False
     if stu and stu.get("has_twin") and stu.get("twin_group_id"):
-        # Another student in same twin group?
-        twin_count = await db.students.count_documents({"twin_group_id": stu["twin_group_id"], "section_id": chosen_section})
-        if twin_count >= 2:
-            twin_conflict = True
+        # fetch other twins in same group in this section
+        twins = await db.students.find({
+            "section_id": chosen_section,
+            "twin_group_id": stu["twin_group_id"]
+        }).to_list(10)
+        # If 2+ students in group, we may need disambiguation
+        if len(twins) >= 2:
+            # Check who is already marked today
+            today = datetime.now(timezone.utc).date()
+            start = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
+            end = start + timedelta(days=1)
+            present_ids = set()
+            cur = db.attendance.find({
+                "section_id": chosen_section,
+                "timestamp": {"$gte": start, "$lt": end},
+                "status": "Present"
+            })
+            async for a in cur:
+                present_ids.add(a["student_id"])
+
+            # If one twin already present and the other not, auto-assign to other
+            unmarked_twins = [t for t in twins if t["id"] not in present_ids]
+            if len(unmarked_twins) == 1:
+                # Auto-assign to the only unmarked twin
+                best_id = unmarked_twins[0]["id"]
+                best_name = unmarked_twins[0]["name"]
+            elif len(unmarked_twins) >= 2:
+                # Ambiguous: return a message requesting confirmation with both IDs
+                twin_conflict = True
+                candidates = [{"id": t["id"], "name": t["name"]} for t in twins]
+                return AttendanceMarkResponse(status="Twin detected. Please confirm who it is.", twin_conflict=True, twin_candidates=candidates)
 
     # Prevent duplicate for today
     today = datetime.now(timezone.utc).date()
@@ -859,8 +928,27 @@ async def list_sections(school_id: Optional[str] = None, current: dict = Depends
 # Students
 @api.post("/students/create", response_model=Student)
 async def create_student(payload: StudentCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN', 'GOV_ADMIN'))):
-    # This endpoint is disabled because students must be enrolled only via face enrollment
-    raise HTTPException(status_code=405, detail="Disabled: Use /api/enrollment/students for face enrollment only")
+    # Validate section belongs to current school if school admin/co-admin
+    sec = await db.sections.find_one({"id": payload.section_id})
+    if not sec:
+        raise HTTPException(status_code=404, detail="Section not found")
+    if current["role"] in ('SCHOOL_ADMIN', 'CO_ADMIN') and sec.get("school_id") != current.get("school_id"):
+        raise HTTPException(status_code=403, detail="Cannot add student to another school's section")
+    sid = str(uuid.uuid4())
+    student_code = payload.student_code or payload.roll_no or sid[:8]
+    doc = {
+        "id": sid,
+        "name": payload.name,
+        "student_code": student_code,
+        "roll_no": payload.roll_no or payload.student_code,
+        "section_id": payload.section_id,
+        "parent_mobile": payload.parent_mobile,
+        "has_twin": payload.has_twin,
+        "twin_group_id": payload.twin_group_id,
+        "created_at": now_iso(),
+    }
+    await db.students.insert_one(doc)
+    return Student(**doc)
 
 @api.put("/students/{student_id}", response_model=Student)
 async def update_student(student_id: str, payload: StudentUpdate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
@@ -1041,16 +1129,10 @@ class ResendReq(BaseModel):
     temp_password: Optional[str] = None
 
 @api.post("/users/resend-credentials")
-async def resend_credentials(payload: ResendReq, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN'))):
+async def resend_credentials(payload: ResendReq, _: dict = Depends(require_roles('GOV_ADMIN'))):
     user = await db.users.find_one({"email": payload.email.lower()})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    # If School Admin, only allow resending for TEACHERs within the same school
-    if current.get('role') == 'SCHOOL_ADMIN':
-        if user.get('role') != 'TEACHER' or user.get('school_id') != current.get('school_id'):
-            raise HTTPException(status_code=403, detail="Only teachers within your school can be resent credentials")
-
     temp = payload.temp_password or secrets.token_urlsafe(8)
     await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_password(temp)}})
     role_human = 'Teacher' if user['role']=='TEACHER' else ('School Admin' if user['role']=='SCHOOL_ADMIN' else 'Co-Admin' if user['role']=='CO_ADMIN' else 'Government Admin')
@@ -1067,7 +1149,6 @@ async def on_startup():
     await db.students.create_index("section_id")
     await db.students.create_index("twin_group_id")
     await db.attendance.create_index([("section_id", 1), ("date", 1), ("student_id", 1)], unique=True)
-    # Counter documents use the default _id index; no extra index needed
 
     # Seed initial users/school if provided in env
     try:
