@@ -1067,8 +1067,7 @@ async def on_startup():
     await db.students.create_index("section_id")
     await db.students.create_index("twin_group_id")
     await db.attendance.create_index([("section_id", 1), ("date", 1), ("student_id", 1)], unique=True)
-    # Counter collection for per-section incremental student IDs
-    await db.counters.create_index("_id", unique=True)
+    # Counter documents use the default _id index; no extra index needed
 
     # Seed initial users/school if provided in env
     try:
