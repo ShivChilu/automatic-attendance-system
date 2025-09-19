@@ -176,7 +176,7 @@ class EmbeddingsFilterTester:
         """Insert students directly via MongoDB to test filtering"""
         self.log("=== INSERTING STUDENTS DIRECTLY VIA MONGODB ===")
         
-        if not self.db:
+        if self.db is None:
             self.log("❌ No MongoDB connection available")
             return False
         
