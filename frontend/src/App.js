@@ -632,10 +632,21 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
                       </select>
                     </td>
                     <td>
-                      <select className="select" defaultValue={t.section_id || ''} onChange={(e)=> updateTeacher(t.id, { section_id: e.target.value || undefined })}>
-                        <option value="">Unassigned</option>
-                        {sections.map((s)=> <option key={s.id} value={s.id}>{s.name}{s.grade ? ` (Grade ${s.grade})` : ''}</option>)}
-                      </select>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-xs text-gray-600">
+                          <input type="checkbox" defaultChecked={!!t.all_sections} onChange={async (e)=>{
+                            await updateTeacher(t.id, { all_sections: e.target.checked, section_ids: e.target.checked ? [] : (t.section_ids || []) , section_id: e.target.checked ? null : (t.section_ids?.[0] || null) });
+                            loadStaff();
+                          }} /> All
+                        </label>
+                        <select className="select" multiple defaultValue={t.section_ids || (t.section_id ? [t.section_id] : [])} onChange={async (e)=>{
+                          const vals = Array.from(e.target.selectedOptions).map(o=>o.value);
+                          await updateTeacher(t.id, { section_ids: vals, all_sections: false, section_id: vals[0] || null });
+                          loadStaff();
+                        }} disabled={t.all_sections}>
+                          {sections.map((s)=> <option key={s.id} value={s.id}>{s.name}{s.grade ? ` (Grade ${s.grade})` : ''}</option>)}
+                        </select>
+                      </div>
                     </td>
                     <td style={{display:'flex',gap:'0.5rem'}}>
                       <Button className="btn_secondary" onClick={()=> resendUser(t.email)}>📧 Resend</Button>
