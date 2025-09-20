@@ -128,7 +128,9 @@ class TeacherCreateRequest(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     subject: Optional[str] = None
-    section_id: Optional[str] = None
+    section_id: Optional[str] = None  # legacy single section
+    section_ids: Optional[List[str]] = None  # new multi-section
+    all_sections: Optional[bool] = False  # grant access to all sections of school
     password: Optional[str] = None
     school_id: Optional[str] = None  # only for GOV_ADMIN usage
 
