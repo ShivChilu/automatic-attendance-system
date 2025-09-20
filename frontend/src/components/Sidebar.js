@@ -65,7 +65,8 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
           items: [
             { id: 'sections', label: 'Manage Sections', icon: '📝' },
             { id: 'students', label: 'Student Management', icon: '👨‍🎓' },
-            { id: 'enrollment', label: 'Face Enrollment', icon: '🎭' }
+            { id: 'enrollment', label: 'Face Enrollment', icon: '🎭' },
+            { id: 'announcements', label: 'Announcements', icon: '📢' }
           ]
         },
         {
