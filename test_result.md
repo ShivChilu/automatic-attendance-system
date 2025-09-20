@@ -390,6 +390,14 @@ test_plan:
     - "Validation error message format for frontend compatibility"
   stuck_tasks: []
   test_all: false
+  current_focus:
+    - "Phase1: Announcements create/list"
+    - "Phase1: Teacher multi-section & all-sections allotment"
+    - "Phase1: Student enrollment gender field"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
   test_priority: "high_first"
 
 agent_communication:
