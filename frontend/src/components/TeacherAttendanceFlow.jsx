@@ -212,11 +212,11 @@ export default function TeacherAttendanceFlow({ me }) {
               <select className="select" value={assignedSection?.id || ''} onChange={(e)=>{
                 const s = sections.find(x => x.id === e.target.value);
                 setAssignedSection(s || null);
-              }} disabled={!!me?.section_id}>
+              }}>
                 <option value="">— Select —</option>
-                {sections.map(s => <option key={s.id} value={s.id}>{s.name}{s.grade ? ` (Grade ${s.grade})` : ''}</option>)}
+                {allowedSections.map(s => <option key={s.id} value={s.id}>{s.name}{s.grade ? ` (Grade ${s.grade})` : ''}</option>)}
               </select>
-              {me?.section_id && <div className="text-xs text-gray-500 mt-1">Assigned section</div>}
+              {allowedSections.length === 0 && <div className="text-xs text-red-600 mt-1">No sections allotted by admin</div>}
             </div>
             <div className="form_row">
               <Label className="form_label">Date</Label>
