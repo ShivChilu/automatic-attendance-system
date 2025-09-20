@@ -846,10 +846,21 @@ def _parse_hhmm(t: str) -> Optional[int]:
 # Create session
 @api.post("/attendance/sessions", response_model=AttendanceSessionPublic)
 async def create_session(payload: AttendanceSessionCreate, current: dict = Depends(require_roles('TEACHER'))):
-    if not current.get("section_id"):
-        raise HTTPException(status_code=400, detail="Teacher is not assigned to a section")
-    if payload.section_id != current.get("section_id"):
-        raise HTTPException(status_code=403, detail="Select your assigned section")
+    # Determine allowed sections for this teacher
+    allowed: List[str] = []
+    if current.get("all_sections"):
+        # all sections in this school
+        secs = await db.sections.find({"school_id": current.get("school_id")}).to_list(10000)
+        allowed = [s['id'] for s in secs]
+    else:
+        if current.get("section_ids"):
+            allowed = list(current.get("section_ids") or [])
+        elif current.get("section_id"):
+            allowed = [current.get("section_id")]
+    if not allowed:
+        raise HTTPException(status_code=400, detail="Teacher has no section allotment. Please contact admin.")
+    if payload.section_id not in allowed:
+        raise HTTPException(status_code=403, detail="Select a section allotted to you")
     # Date validation: must be today
     today = datetime.now(timezone.utc).date()
     date_str = payload.date or today.isoformat()
