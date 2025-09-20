@@ -662,6 +662,7 @@ async def list_students(
         return {
             "id": sid,
             "name": name,
+            "gender": (d.get("gender") if d.get("gender") in ("Male","Female","Other") else None),
             "student_code": str(student_code or ""),
             "roll_no": roll_no,
             "section_id": section_id,
