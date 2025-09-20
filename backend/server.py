@@ -1427,7 +1427,11 @@ async def create_teacher(payload: TeacherCreateRequest, current: dict = Depends(
         "phone": payload.phone,
         "school_id": school_id,
         "subject": payload.subject,
-        "section_id": payload.section_id,
+        # legacy single section for backward compatibility
+        "section_id": (section_ids[0] if (not payload.all_sections and section_ids) else None),
+        # new multi-section fields
+        "section_ids": (section_ids if (not payload.all_sections) else []),
+        "all_sections": bool(payload.all_sections),
         "password_hash": hash_password(temp_pass),
         "created_at": now_iso(),
     }
