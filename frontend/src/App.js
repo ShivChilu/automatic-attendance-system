@@ -689,31 +689,37 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
               <table>
                 <thead>
                   <tr>
-                    <th style={{ color: '#374151' }}>ID</th>
                     <th style={{ color: '#374151' }}>Name</th>
-                    <th style={{ color: '#374151' }}>Parent Mobile</th>
                     <th style={{ color: '#374151' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {students.map((st) => (
                     <tr key={st.id}>
-                      <td style={{ width: '90px' }}>
-                        <div className="form_input" style={{ background: '#f9fafb', border: '1px solid #e5e7eb' }}>{st.roll_no || st.student_code}</div>
-                      </td>
                       <td>
-                        <Input defaultValue={st.name} onBlur={(e)=> editStudent(st, { name: e.target.value })} className="form_input" />
-                      </td>
-                      <td>
-                        <Input defaultValue={st.parent_mobile || ''} onBlur={(e)=> editStudent(st, { parent_mobile: e.target.value || undefined })} className="form_input" />
+                        <span className="font-semibold text-gray-800">{st.name}</span>
                       </td>
                       <td style={{display:'flex',gap:'0.5rem'}}>
+                        <Button className="btn_secondary" onClick={async()=>{
+                          try {
+                            const res = await api.get(`/students/${st.id}/detail`);
+                            const detail = res.data;
+                            const secName = sections.find(s=>s.id===detail.student.section_id)?.name || '—';
+                            alert(`Name: ${detail.student.name}\nCode: ${detail.student.student_code}\nSection: ${secName}\nParent: ${detail.student.parent_mobile || '-'}\nRecent attendance: ${detail.attendance.slice(0,5).map(a=>`${a.date}: ${a.status}`).join(', ') || 'None'}`);
+                          } catch (e) { alert('❌ Failed to load details'); }
+                        }}>👁️ View Details</Button>
+                        <Button className="btn_secondary" onClick={async()=>{
+                          const newSec = prompt('Enter new section ID (choose from dropdown list on page)');
+                          if (!newSec) return;
+                          try { await api.post(`/students/${st.id}/change-section`, { section_id: newSec }); await loadStudents(selectedSec); } catch(e){ alert(e?.response?.data?.detail || 'Failed'); }
+                        }}>🔀 Change Section</Button>
                         <Button className="btn_danger" onClick={()=> deleteStudent(st.id)}>🗑️ Delete</Button>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              <div className="text-xs text-gray-500 mt-2">Tip: To change section, copy a Section ID from network data or switch the dropdown and use that ID. If you want, I can add a nicer modal selector next.</div>
             </div>
           )}
         </div>
