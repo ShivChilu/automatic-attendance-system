@@ -206,6 +206,7 @@ class StudentCreate(BaseModel):
 
 class StudentUpdate(BaseModel):
     name: Optional[str] = None
+    gender: Optional[Literal['Male','Female','Other']] = None
     student_code: Optional[str] = None
     roll_no: Optional[str] = None
     parent_mobile: Optional[str] = None
