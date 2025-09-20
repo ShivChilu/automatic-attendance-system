@@ -772,6 +772,7 @@ async def enroll_student(
     doc = {
         "id": sid,
         "name": name,
+        "gender": (gender if gender in ['Male','Female','Other'] else None),
         "student_code": student_code,
         "roll_no": None,
         "section_id": section_id,
