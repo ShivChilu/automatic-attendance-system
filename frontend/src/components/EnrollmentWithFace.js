@@ -9,6 +9,7 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
   const [selectedSec, setSelectedSec] = useState("");
   const [name, setName] = useState("");
   const [parentMobile, setParentMobile] = useState("");
+  const [gender, setGender] = useState("");
   const [hasTwin, setHasTwin] = useState(false);
   const [twinGroupId, setTwinGroupId] = useState("");
   const [twinOf, setTwinOf] = useState("");
