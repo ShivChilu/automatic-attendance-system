@@ -195,6 +195,7 @@ class Section(BaseModel):
 
 class StudentCreate(BaseModel):
     name: str
+    gender: Optional[Literal['Male','Female','Other']] = None
     student_code: Optional[str] = None
     roll_no: Optional[str] = None
     section_id: str
