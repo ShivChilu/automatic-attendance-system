@@ -1476,7 +1476,9 @@ class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     phone: Optional[str] = None
     subject: Optional[str] = None
-    section_id: Optional[str] = None
+    section_id: Optional[str] = None  # legacy single
+    section_ids: Optional[List[str]] = None
+    all_sections: Optional[bool] = None
 
 @api.put("/users/{user_id}", response_model=UserPublic)
 async def update_user(user_id: str, payload: UserUpdate, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN'))):
