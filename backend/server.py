@@ -1545,7 +1545,7 @@ async def update_user(user_id: str, payload: UserUpdate, current: dict = Depends
     new_u = await db.users.find_one({"id": user_id})
     return UserPublic(
         id=new_u["id"], full_name=new_u["full_name"], email=new_u["email"], role=new_u["role"], phone=new_u.get("phone"),
-        school_id=new_u.get("school_id"), subject=new_u.get("subject"), section_id=new_u.get("section_id"), created_at=new_u["created_at"]
+        school_id=new_u.get("school_id"), subject=new_u.get("subject"), section_id=new_u.get("section_id"), section_ids=new_u.get("section_ids"), all_sections=bool(new_u.get("all_sections", False)), created_at=new_u["created_at"]
     )
 
 @api.delete("/users/{user_id}")
