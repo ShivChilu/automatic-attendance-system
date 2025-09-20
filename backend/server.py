@@ -1625,6 +1625,7 @@ async def update_user(user_id: str, payload: UserUpdate, current: dict = Depends
             upd['section_id'] = None
         else:
             # validate provided section_ids / section_id
+            # Prefer multi-section payload when present; do not override with legacy section_id
             if 'section_ids' in upd and isinstance(upd['section_ids'], list):
                 if upd['section_ids']:
                     secs = await db.sections.find({"id": {"$in": upd['section_ids']}}).to_list(10000)
@@ -1635,9 +1636,10 @@ async def update_user(user_id: str, payload: UserUpdate, current: dict = Depends
                     if len(valid_ids) != len(upd['section_ids']):
                         raise HTTPException(status_code=400, detail="One or more sections invalid")
                     upd['section_ids'] = list(valid_ids)
-                # set legacy section_id for convenience
+                # set legacy section_id for convenience but only derived from section_ids
                 upd['section_id'] = (upd['section_ids'][0] if upd['section_ids'] else None)
-            if 'section_id' in upd and upd['section_id']:
+            elif 'section_id' in upd and upd['section_id']:
+                # Only handle legacy single section when multi not provided
                 sec = await db.sections.find_one({"id": upd['section_id']})
                 if not sec:
                     raise HTTPException(status_code=400, detail="Invalid section")
