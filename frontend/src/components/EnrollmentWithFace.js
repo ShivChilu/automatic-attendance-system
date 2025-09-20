@@ -77,6 +77,7 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
       fd.append("name", name);
       fd.append("section_id", selectedSec);
       if (parentMobile) fd.append("parent_mobile", parentMobile);
+      if (gender) fd.append("gender", gender);
       fd.append("has_twin", hasTwin ? "true" : "false");
       if (twinGroupId) fd.append("twin_group_id", twinGroupId);
       if (hasTwin && twinOf) fd.append("twin_of", twinOf);
