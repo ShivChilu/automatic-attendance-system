@@ -1004,8 +1004,14 @@ async def manual_mark(req: ManualMarkRequest, current: dict = Depends(require_ro
         raise HTTPException(status_code=404, detail="Session not found")
     if ses.get("teacher_id") != current.get("id"):
         raise HTTPException(status_code=403, detail="Not allowed")
+    # Allow edits if not locked OR within 15 minutes after submission
     if ses.get("locked"):
-        raise HTTPException(status_code=400, detail="Session is locked")
+        submitted_at = ses.get("submitted_at")
+        if not isinstance(submitted_at, datetime):
+            raise HTTPException(status_code=400, detail="Session is locked")
+        now = now_iso()
+        if (now - submitted_at) > timedelta(minutes=15):
+            raise HTTPException(status_code=400, detail="Edit window closed (15 mins after submission)")
     stu = await db.students.find_one({"id": req.student_id, "section_id": ses["section_id"]})
     if not stu:
         raise HTTPException(status_code=404, detail="Student not in this section")
