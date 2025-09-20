@@ -320,10 +320,10 @@ export default function TeacherAttendanceFlow({ me }) {
                           </span>
                         </td>
                         <td><span className="text-xs text-gray-500">{st.marked_at ? new Date(st.marked_at).toLocaleTimeString() : '-'}</span></td>
-                        {!locked && (
+                        {(!locked || canEditLocked) && (
                           <td style={{display:'flex', gap:'0.5rem'}}>
-                            <Button className="btn_success" onClick={()=> manualMark(st.student_id, 'Present')}>Mark Present</Button>
-                            <Button className="btn_danger" onClick={()=> manualMark(st.student_id, 'Absent')}>Mark Absent</Button>
+                            <Button className="btn_success" onClick={()=> manualMark(st.student_id, 'Present')} disabled={locked && !canEditLocked}>Mark Present</Button>
+                            <Button className="btn_danger" onClick={()=> manualMark(st.student_id, 'Absent')} disabled={locked && !canEditLocked}>Mark Absent</Button>
                           </td>
                         )}
                       </tr>
