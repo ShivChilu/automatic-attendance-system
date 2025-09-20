@@ -106,7 +106,7 @@ export default function TeacherAttendanceFlow({ me }) {
   const startAttendance = async () => {
     setStatus("");
     if (!assignedSection) {
-      alert("No section assigned to you. Ask admin to assign a section.");
+      alert("No section allotted to you. Ask admin to allot section(s).");
       return;
     }
     // Date must be today only
