@@ -198,6 +198,13 @@ export default function TeacherAttendanceFlow({ me }) {
   };
 
   const locked = !!detail?.session?.locked;
+  const submittedAt = detail?.session?.submitted_at ? new Date(detail.session.submitted_at) : null;
+  const canEditLocked = useMemo(() => {
+    if (!locked) return true;
+    if (!submittedAt) return false;
+    const now = new Date();
+    return (now.getTime() - submittedAt.getTime()) <= 15 * 60 * 1000;
+  }, [locked, submittedAt]);
 
   return (
     <div className="card wide animate-slide-in">
