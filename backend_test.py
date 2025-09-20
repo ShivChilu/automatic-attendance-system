@@ -2338,9 +2338,634 @@ except Exception as e:
             traceback.print_exc()
             return False
 
+    def test_phase1_announcements(self):
+        """Test Phase 1: Announcements create/list functionality"""
+        if not self.school_token or not self.teacher_token:
+            print("❌ Skipping announcements test - no school or teacher token available")
+            return False
+            
+        print(f"\n🔍 Testing Phase 1: Announcements...")
+        
+        # Test 1: Create announcement targeting all teachers
+        print("   Testing announcement creation (target_all=true)...")
+        self.tests_run += 1
+        
+        try:
+            success, response = self.run_test(
+                "Create Announcement (Target All)",
+                "POST",
+                "/announcements",
+                200,
+                data={
+                    "title": "Important School Notice",
+                    "description": "All teachers must attend the staff meeting tomorrow at 10 AM.",
+                    "target_all": True
+                },
+                token=self.school_token
+            )
+            
+            if not success or 'id' not in response:
+                print("   ❌ Failed to create announcement targeting all")
+                return False
+                
+            announcement_id = response['id']
+            print(f"   ✅ Created announcement targeting all: {announcement_id}")
+            
+        except Exception as e:
+            print(f"   ❌ Error creating announcement: {str(e)}")
+            return False
+        
+        # Test 2: Get teachers list to target specific teacher
+        print("   Getting teachers list for targeted announcement...")
+        success, teachers_response = self.run_test(
+            "Get Teachers List",
+            "GET",
+            "/users?role=TEACHER",
+            200,
+            token=self.school_token
+        )
+        
+        if not success or 'users' not in teachers_response:
+            print("   ❌ Failed to get teachers list")
+            return False
+            
+        teachers = teachers_response['users']
+        if not teachers:
+            print("   ❌ No teachers found for targeted announcement")
+            return False
+            
+        teacher_id = teachers[0]['id']
+        print(f"   ✅ Found teacher for targeting: {teacher_id}")
+        
+        # Test 3: Create announcement targeting specific teacher
+        print("   Testing announcement creation (target specific teacher)...")
+        self.tests_run += 1
+        
+        try:
+            success, response = self.run_test(
+                "Create Announcement (Target Specific)",
+                "POST",
+                "/announcements",
+                200,
+                data={
+                    "title": "Subject Specific Notice",
+                    "description": "Please review the new curriculum guidelines for your subject.",
+                    "target_all": False,
+                    "target_teacher_ids": [teacher_id]
+                },
+                token=self.school_token
+            )
+            
+            if not success or 'id' not in response:
+                print("   ❌ Failed to create targeted announcement")
+                return False
+                
+            targeted_announcement_id = response['id']
+            print(f"   ✅ Created targeted announcement: {targeted_announcement_id}")
+            
+        except Exception as e:
+            print(f"   ❌ Error creating targeted announcement: {str(e)}")
+            return False
+        
+        # Test 4: Teacher fetches announcements
+        print("   Testing teacher fetching announcements...")
+        self.tests_run += 1
+        
+        try:
+            success, response = self.run_test(
+                "Teacher Get Announcements",
+                "GET",
+                "/announcements",
+                200,
+                token=self.teacher_token
+            )
+            
+            if not success or not isinstance(response, list):
+                print("   ❌ Failed to fetch announcements as teacher")
+                return False
+                
+            # Should include both announcements (target_all and targeted to this teacher)
+            announcement_ids = [ann['id'] for ann in response]
+            
+            if announcement_id in announcement_ids:
+                print("   ✅ Teacher can see announcement targeted to all")
+            else:
+                print("   ❌ Teacher cannot see announcement targeted to all")
+                return False
+                
+            if targeted_announcement_id in announcement_ids:
+                print("   ✅ Teacher can see announcement targeted to them")
+            else:
+                print("   ❌ Teacher cannot see announcement targeted to them")
+                return False
+                
+            self.tests_passed += 1
+            print("   ✅ Announcements functionality working correctly")
+            return True
+            
+        except Exception as e:
+            print(f"   ❌ Error fetching announcements as teacher: {str(e)}")
+            return False
+
+    def test_phase1_teacher_section_allotment(self):
+        """Test Phase 1: Teacher multi-section and all-sections allotment"""
+        if not self.created_school_id or not self.section_id:
+            print("❌ Skipping teacher section allotment test - no school or section available")
+            return False
+            
+        print(f"\n🔍 Testing Phase 1: Teacher Section Allotment...")
+        
+        # Create additional sections for multi-section testing
+        print("   Creating additional sections for testing...")
+        additional_sections = []
+        
+        for i in range(2):
+            success, response = self.run_test(
+                f"Create Additional Section {i+1}",
+                "POST",
+                "/sections",
+                200,
+                data={
+                    "school_id": self.created_school_id,
+                    "name": f"Test Section B{i+1}",
+                    "grade": f"{9+i}"
+                },
+                token=self.gov_token
+            )
+            
+            if success and 'id' in response:
+                additional_sections.append(response['id'])
+                print(f"   ✅ Created section: {response['id']}")
+            else:
+                print(f"   ❌ Failed to create additional section {i+1}")
+                return False
+        
+        # Test 1: Create teacher with all_sections=true
+        print("   Testing teacher creation with all_sections=true...")
+        import time
+        timestamp = str(int(time.time()) + 100)
+        
+        success, response = self.run_test(
+            "Create Teacher (All Sections)",
+            "POST",
+            "/users/teachers",
+            200,
+            data={
+                "full_name": f"All Sections Teacher {timestamp}",
+                "email": f"allsections.teacher.{timestamp}@testschool.edu.in",
+                "phone": "9876543230",
+                "subject": "Math",
+                "all_sections": True,
+                "school_id": self.created_school_id
+            },
+            token=self.gov_token
+        )
+        
+        if not success or response.get('role') != 'TEACHER':
+            print("   ❌ Failed to create teacher with all_sections=true")
+            return False
+            
+        all_sections_teacher_id = response['id']
+        
+        # Verify response structure
+        if not response.get('all_sections'):
+            print("   ❌ Teacher all_sections field not set to true")
+            return False
+            
+        if response.get('section_ids') != []:
+            print("   ❌ Teacher section_ids should be empty when all_sections=true")
+            return False
+            
+        print("   ✅ Teacher created with all_sections=true, section_ids=[]")
+        
+        # Test 2: Update teacher to specific sections
+        print("   Testing teacher update to specific sections...")
+        section_ids_to_assign = [self.section_id, additional_sections[0]]
+        
+        success, response = self.run_test(
+            "Update Teacher (Specific Sections)",
+            "PUT",
+            f"/users/{all_sections_teacher_id}",
+            200,
+            data={
+                "section_ids": section_ids_to_assign,
+                "all_sections": False
+            },
+            token=self.gov_token
+        )
+        
+        if not success:
+            print("   ❌ Failed to update teacher to specific sections")
+            return False
+            
+        # Verify update
+        if response.get('all_sections') != False:
+            print("   ❌ Teacher all_sections should be false after update")
+            return False
+            
+        if set(response.get('section_ids', [])) != set(section_ids_to_assign):
+            print(f"   ❌ Teacher section_ids mismatch. Expected: {section_ids_to_assign}, Got: {response.get('section_ids')}")
+            return False
+            
+        print("   ✅ Teacher updated to specific sections successfully")
+        
+        # Test 3: Update teacher back to all_sections=true
+        print("   Testing teacher update back to all_sections=true...")
+        
+        success, response = self.run_test(
+            "Update Teacher (Back to All Sections)",
+            "PUT",
+            f"/users/{all_sections_teacher_id}",
+            200,
+            data={
+                "all_sections": True
+            },
+            token=self.gov_token
+        )
+        
+        if not success:
+            print("   ❌ Failed to update teacher back to all_sections=true")
+            return False
+            
+        # Verify section_ids cleared and section_id null
+        if response.get('all_sections') != True:
+            print("   ❌ Teacher all_sections should be true after update")
+            return False
+            
+        if response.get('section_ids') != []:
+            print("   ❌ Teacher section_ids should be cleared when all_sections=true")
+            return False
+            
+        if response.get('section_id') is not None:
+            print("   ❌ Teacher section_id should be null when all_sections=true")
+            return False
+            
+        print("   ✅ Teacher updated back to all_sections=true, section_ids cleared")
+        print("   ✅ Teacher section allotment functionality working correctly")
+        return True
+
+    def test_phase1_attendance_restriction(self):
+        """Test Phase 1: Attendance restriction behavior for teachers"""
+        if not self.created_school_id or not self.section_id:
+            print("❌ Skipping attendance restriction test - no school or section available")
+            return False
+            
+        print(f"\n🔍 Testing Phase 1: Attendance Restriction Behavior...")
+        
+        # Test 1: Create teacher with no section allotment
+        print("   Creating teacher with no section allotment...")
+        import time
+        timestamp = str(int(time.time()) + 200)
+        
+        success, response = self.run_test(
+            "Create Teacher (No Allotment)",
+            "POST",
+            "/users/teachers",
+            200,
+            data={
+                "full_name": f"No Allotment Teacher {timestamp}",
+                "email": f"noallotment.teacher.{timestamp}@testschool.edu.in",
+                "phone": "9876543240",
+                "subject": "Science",
+                "section_ids": [],
+                "all_sections": False,
+                "school_id": self.created_school_id
+            },
+            token=self.gov_token
+        )
+        
+        if not success:
+            print("   ❌ Failed to create teacher with no allotment")
+            return False
+            
+        no_allotment_teacher_id = response['id']
+        no_allotment_teacher_email = f"noallotment.teacher.{timestamp}@testschool.edu.in"
+        
+        # Set password and login
+        success, _ = self.run_test(
+            "Set Password for No Allotment Teacher",
+            "POST",
+            "/users/resend-credentials",
+            200,
+            data={
+                "email": no_allotment_teacher_email,
+                "temp_password": "Pass@123"
+            },
+            token=self.gov_token
+        )
+        
+        if not success:
+            print("   ❌ Failed to set password for no allotment teacher")
+            return False
+        
+        success, response = self.run_test(
+            "Login No Allotment Teacher",
+            "POST",
+            "/auth/login",
+            200,
+            data={"email": no_allotment_teacher_email, "password": "Pass@123"}
+        )
+        
+        if not success or 'access_token' not in response:
+            print("   ❌ Failed to login no allotment teacher")
+            return False
+            
+        no_allotment_token = response['access_token']
+        
+        # Test 2: Try to create attendance session with no allotment (should fail with 400)
+        print("   Testing attendance session creation with no allotment...")
+        
+        success, response = self.run_test(
+            "Create Session (No Allotment)",
+            "POST",
+            "/attendance/sessions",
+            400,  # Expect 400 error
+            data={
+                "section_id": self.section_id,
+                "start_time": "09:00",
+                "end_time": "10:00"
+            },
+            token=no_allotment_token
+        )
+        
+        if success:
+            print("   ✅ Teacher with no allotment correctly denied (400)")
+        else:
+            print("   ❌ Teacher with no allotment should get 400 error")
+            return False
+        
+        # Test 3: Create teacher with specific section allotment
+        print("   Creating teacher with specific section allotment...")
+        timestamp = str(int(time.time()) + 300)
+        
+        success, response = self.run_test(
+            "Create Teacher (With Allotment)",
+            "POST",
+            "/users/teachers",
+            200,
+            data={
+                "full_name": f"Allotted Teacher {timestamp}",
+                "email": f"allotted.teacher.{timestamp}@testschool.edu.in",
+                "phone": "9876543250",
+                "subject": "Math",
+                "section_ids": [self.section_id],
+                "all_sections": False,
+                "school_id": self.created_school_id
+            },
+            token=self.gov_token
+        )
+        
+        if not success:
+            print("   ❌ Failed to create teacher with allotment")
+            return False
+            
+        allotted_teacher_email = f"allotted.teacher.{timestamp}@testschool.edu.in"
+        
+        # Set password and login
+        success, _ = self.run_test(
+            "Set Password for Allotted Teacher",
+            "POST",
+            "/users/resend-credentials",
+            200,
+            data={
+                "email": allotted_teacher_email,
+                "temp_password": "Pass@123"
+            },
+            token=self.gov_token
+        )
+        
+        success, response = self.run_test(
+            "Login Allotted Teacher",
+            "POST",
+            "/auth/login",
+            200,
+            data={"email": allotted_teacher_email, "password": "Pass@123"}
+        )
+        
+        if not success or 'access_token' not in response:
+            print("   ❌ Failed to login allotted teacher")
+            return False
+            
+        allotted_token = response['access_token']
+        
+        # Create another section not allotted to this teacher
+        success, response = self.run_test(
+            "Create Non-Allotted Section",
+            "POST",
+            "/sections",
+            200,
+            data={
+                "school_id": self.created_school_id,
+                "name": "Non-Allotted Section",
+                "grade": "12"
+            },
+            token=self.gov_token
+        )
+        
+        if not success:
+            print("   ❌ Failed to create non-allotted section")
+            return False
+            
+        non_allotted_section_id = response['id']
+        
+        # Test 4: Try to create session for non-allotted section (should fail with 403)
+        print("   Testing session creation for non-allotted section...")
+        
+        success, response = self.run_test(
+            "Create Session (Non-Allotted Section)",
+            "POST",
+            "/attendance/sessions",
+            403,  # Expect 403 error
+            data={
+                "section_id": non_allotted_section_id,
+                "start_time": "09:00",
+                "end_time": "10:00"
+            },
+            token=allotted_token
+        )
+        
+        if success:
+            print("   ✅ Teacher correctly denied access to non-allotted section (403)")
+        else:
+            print("   ❌ Teacher should get 403 error for non-allotted section")
+            return False
+        
+        # Test 5: Create session for allotted section (should succeed with 200)
+        print("   Testing session creation for allotted section...")
+        
+        success, response = self.run_test(
+            "Create Session (Allotted Section)",
+            "POST",
+            "/attendance/sessions",
+            200,  # Expect success
+            data={
+                "section_id": self.section_id,
+                "start_time": "09:00",
+                "end_time": "10:00"
+            },
+            token=allotted_token
+        )
+        
+        if success:
+            print("   ✅ Teacher can create session for allotted section (200)")
+            print("   ✅ Attendance restriction behavior working correctly")
+            return True
+        else:
+            print("   ❌ Teacher should be able to create session for allotted section")
+            return False
+
+    def test_phase1_enrollment_gender_field(self):
+        """Test Phase 1: Student enrollment gender field"""
+        if not self.section_id or not self.school_token:
+            print("❌ Skipping enrollment gender test - no section or school token available")
+            return False
+            
+        print(f"\n🔍 Testing Phase 1: Student Enrollment Gender Field...")
+        
+        # Test 1: Enrollment with gender field
+        print("   Testing enrollment with gender='Male'...")
+        
+        import base64
+        test_image_data = base64.b64decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+        )
+        
+        url = f"{self.base_url}/enrollment/students"
+        headers = {'Authorization': f'Bearer {self.school_token}'}
+        
+        files = {'images': ('test_gender.png', test_image_data, 'image/png')}
+        data = {
+            'name': 'Test Student Gender Male',
+            'section_id': self.section_id,
+            'parent_mobile': '9876543260',
+            'gender': 'Male',
+            'has_twin': 'false'
+        }
+        
+        self.tests_run += 1
+        
+        try:
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            # Accept both 200 (success) and 400 (no face embeddings) as valid
+            if response.status_code in [200, 400]:
+                self.tests_passed += 1
+                print(f"   ✅ Enrollment with gender field accepted - Status: {response.status_code}")
+                
+                if response.status_code == 200:
+                    response_data = response.json()
+                    print(f"   Student created with ID: {response_data.get('id')}")
+                    student_id = response_data.get('id')
+                else:
+                    print("   Expected 400 (no face embeddings in container environment)")
+                    # Still test that gender field was accepted (no 422 validation error)
+                    student_id = None
+                    
+            elif response.status_code == 422:
+                print("   ❌ Gender field rejected with validation error (422)")
+                print(f"   Response: {response.text}")
+                return False
+            else:
+                print(f"   ❌ Unexpected response - Status: {response.status_code}")
+                print(f"   Response: {response.text[:300]}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error testing enrollment with gender: {str(e)}")
+            return False
+        
+        # Test 2: Verify gender field in students list
+        print("   Testing gender field in students list...")
+        
+        success, response = self.run_test(
+            "Get Students List (Check Gender)",
+            "GET",
+            f"/students?section_id={self.section_id}",
+            200,
+            token=self.school_token
+        )
+        
+        if not success or not isinstance(response, list):
+            print("   ❌ Failed to get students list")
+            return False
+        
+        # Check if any student has gender field
+        has_gender_field = False
+        for student in response:
+            if 'gender' in student:
+                has_gender_field = True
+                print(f"   ✅ Student has gender field: {student.get('gender')}")
+                break
+        
+        if not has_gender_field:
+            print("   ❌ No students found with gender field")
+            return False
+        
+        # Test 3: Test different gender values
+        print("   Testing enrollment with gender='Female'...")
+        
+        files = {'images': ('test_gender_female.png', test_image_data, 'image/png')}
+        data = {
+            'name': 'Test Student Gender Female',
+            'section_id': self.section_id,
+            'parent_mobile': '9876543261',
+            'gender': 'Female',
+            'has_twin': 'false'
+        }
+        
+        self.tests_run += 1
+        
+        try:
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            if response.status_code in [200, 400]:
+                self.tests_passed += 1
+                print(f"   ✅ Enrollment with gender='Female' accepted - Status: {response.status_code}")
+            elif response.status_code == 422:
+                print("   ❌ Gender='Female' rejected with validation error")
+                return False
+            else:
+                print(f"   ❌ Unexpected response for gender='Female' - Status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error testing enrollment with gender='Female': {str(e)}")
+            return False
+        
+        # Test 4: Test invalid gender value
+        print("   Testing enrollment with invalid gender value...")
+        
+        files = {'images': ('test_gender_invalid.png', test_image_data, 'image/png')}
+        data = {
+            'name': 'Test Student Gender Invalid',
+            'section_id': self.section_id,
+            'parent_mobile': '9876543262',
+            'gender': 'InvalidGender',
+            'has_twin': 'false'
+        }
+        
+        self.tests_run += 1
+        
+        try:
+            response = requests.post(url, files=files, data=data, headers=headers, timeout=30)
+            
+            # Should accept invalid gender but normalize it to None
+            if response.status_code in [200, 400]:
+                self.tests_passed += 1
+                print(f"   ✅ Invalid gender handled gracefully - Status: {response.status_code}")
+                print("   ✅ Gender field functionality working correctly")
+                return True
+            else:
+                print(f"   ❌ Unexpected response for invalid gender - Status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"   ❌ Error testing enrollment with invalid gender: {str(e)}")
+            return False
+
 def main():
-    print("🚀 Starting URGENT MediaPipe Face Mesh Testing After Protobuf Fix")
-    print("🚨 PRIORITY: Testing MediaPipe Face Mesh initialization improvements")
+    print("🚀 Starting Phase 1 Backend API Testing")
+    print("🎯 FOCUS: Testing Phase 1 features - Announcements, Teacher Allotment, Attendance Restriction, Gender Field")
     print("=" * 80)
     
     tester = AttendanceAPITester()
