@@ -846,13 +846,23 @@ function TeacherView({ me, currentSection, onSectionChange }) {
     if (currentSection === 'scan-attendance') {
       return <TeacherAttendanceFlow me={me} />;
     } else {
+      const Announcements = require('./components/Announcements.jsx').default;
       return (
         <>
           <HeroSection 
             title={school ? `${school.name}` : "Teacher Dashboard"}
-            subtitle={`Attendance Management Portal • ${me.full_name}`}
+            subtitle={`Welcome back, ${me.full_name}`}
             backgroundImage="https://images.unsplash.com/photo-1677442135703-1787eea5ce01"
           />
+          <div className="card wide" style={{marginTop:'0.75rem'}}>
+            <div className="flex items-center justify-between">
+              <div className="text-gray-800 font-semibold">Current Time</div>
+              <LiveClock />
+            </div>
+          </div>
+          <div className="card wide" style={{marginTop:'0.75rem'}}>
+            <Announcements me={me} />
+          </div>
           <TeacherAttendanceFlow me={me} />
         </>
       );
