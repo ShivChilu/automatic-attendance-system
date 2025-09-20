@@ -14,6 +14,12 @@ import Sidebar from "./components/Sidebar";
 import TeacherAttendanceFlow from "./components/TeacherAttendanceFlow.jsx";
 import AnalyticsGov from "./components/AnalyticsGov.jsx";
 import AnalyticsSchool from "./components/AnalyticsSchool.jsx";
+function LiveClock(){
+  const [now, setNow] = useState(new Date());
+  useEffect(()=>{ const t = setInterval(()=> setNow(new Date()), 1000); return ()=> clearInterval(t); },[]);
+  return <div className="text-sm text-gray-700">{now.toLocaleTimeString()}</div>;
+}
+
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
