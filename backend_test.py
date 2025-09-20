@@ -4,7 +4,7 @@ from datetime import datetime
 import json
 
 class AttendanceAPITester:
-    def __init__(self, base_url="https://smart-attendance-29.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://smart-attendance-30.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.gov_token = None
         self.school_token = None
@@ -1668,7 +1668,7 @@ class AttendanceAPITester:
         print(f"\n🚨 URGENT: Verifying Domain Fix for Student Enrollment...")
         
         # Test the specific domain mentioned in the review request
-        correct_domain_url = "https://smart-attendance-29.preview.emergentagent.com/api/enrollment/students"
+        correct_domain_url = "https://smart-attendance-30.preview.emergentagent.com/api/enrollment/students"
         
         print(f"   Testing correct domain: {correct_domain_url}")
         
