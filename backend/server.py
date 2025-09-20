@@ -1401,10 +1401,23 @@ async def create_teacher(payload: TeacherCreateRequest, current: dict = Depends(
         raise HTTPException(status_code=400, detail="school_id required")
     if payload.subject and payload.subject not in ALLOWED_SUBJECTS:
         raise HTTPException(status_code=400, detail="Invalid subject")
-    if payload.section_id:
-        sec = await db.sections.find_one({"id": payload.section_id})
-        if not sec or sec.get("school_id") != school_id:
-            raise HTTPException(status_code=400, detail="Invalid section for this school")
+    # Validate sections
+    section_ids: List[str] = []
+    if payload.all_sections:
+        section_ids = []  # denote all by flag
+    else:
+        if payload.section_ids:
+            # validate all belong to school
+            secs = await db.sections.find({"id": {"$in": payload.section_ids}}).to_list(10000)
+            valid_ids = {s['id'] for s in secs if s.get('school_id') == school_id}
+            if len(valid_ids) != len(payload.section_ids):
+                raise HTTPException(status_code=400, detail="One or more sections invalid for this school")
+            section_ids = list(valid_ids)
+        elif payload.section_id:
+            sec = await db.sections.find_one({"id": payload.section_id})
+            if not sec or sec.get("school_id") != school_id:
+                raise HTTPException(status_code=400, detail="Invalid section for this school")
+            section_ids = [payload.section_id]
     temp_pass = payload.password or secrets.token_urlsafe(8)
     user_doc = {
         "id": str(uuid.uuid4()),
