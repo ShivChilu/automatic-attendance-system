@@ -1513,10 +1513,34 @@ async def update_user(user_id: str, payload: UserUpdate, current: dict = Depends
     if user.get('role') == 'TEACHER':
         if 'subject' in upd and upd['subject'] not in ALLOWED_SUBJECTS:
             raise HTTPException(status_code=400, detail="Invalid subject")
-        if 'section_id' in upd and upd['section_id']:
-            sec = await db.sections.find_one({"id": upd['section_id']})
-            if not sec or (current['role'] == 'SCHOOL_ADMIN' and sec.get('school_id') != current.get('school_id')):
-                raise HTTPException(status_code=400, detail="Invalid section for this school")
+        # Normalize multi-section fields
+        if 'all_sections' in upd and upd['all_sections']:
+            upd['section_ids'] = []
+            upd['section_id'] = None
+        else:
+            # validate provided section_ids / section_id
+            if 'section_ids' in upd and isinstance(upd['section_ids'], list):
+                if upd['section_ids']:
+                    secs = await db.sections.find({"id": {"$in": upd['section_ids']}}).to_list(10000)
+                    valid_ids = {s['id'] for s in secs}
+                    # if SCHOOL_ADMIN, ensure same school
+                    if current['role'] == 'SCHOOL_ADMIN':
+                        valid_ids = {s['id'] for s in secs if s.get('school_id') == current.get('school_id')}
+                    if len(valid_ids) != len(upd['section_ids']):
+                        raise HTTPException(status_code=400, detail="One or more sections invalid")
+                    upd['section_ids'] = list(valid_ids)
+                # set legacy section_id for convenience
+                upd['section_id'] = (upd['section_ids'][0] if upd['section_ids'] else None)
+            if 'section_id' in upd and upd['section_id']:
+                sec = await db.sections.find_one({"id": upd['section_id']})
+                if not sec:
+                    raise HTTPException(status_code=400, detail="Invalid section")
+                if current['role'] == 'SCHOOL_ADMIN' and sec.get('school_id') != current.get('school_id'):
+                    raise HTTPException(status_code=400, detail="Invalid section for this school")
+                # ensure section_ids reflects this choice
+                upd['section_ids'] = [upd['section_id']]
+            if 'all_sections' not in upd:
+                upd['all_sections'] = False
     await db.users.update_one({"id": user_id}, {"$set": upd})
     new_u = await db.users.find_one({"id": user_id})
     return UserPublic(
