@@ -1488,7 +1488,7 @@ async def list_users(role: Role, current: dict = Depends(require_roles('GOV_ADMI
     items = await db.users.find(query).to_list(1000)
     return {"users": [UserPublic(
         id=u["id"], full_name=u["full_name"], email=u["email"], role=u["role"], phone=u.get("phone"),
-        school_id=u.get("school_id"), subject=u.get("subject"), section_id=u.get("section_id"), created_at=u["created_at"]
+        school_id=u.get("school_id"), subject=u.get("subject"), section_id=u.get("section_id"), section_ids=u.get("section_ids"), all_sections=bool(u.get("all_sections", False)), created_at=u["created_at"]
     ) for u in items]}
 
 class UserUpdate(BaseModel):
