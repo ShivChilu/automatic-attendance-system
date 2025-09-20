@@ -118,6 +118,8 @@ class UserPublic(BaseModel):
     school_id: Optional[str] = None
     subject: Optional[str] = None
     section_id: Optional[str] = None
+    section_ids: Optional[List[str]] = None
+    all_sections: Optional[bool] = False
     created_at: datetime
 
 # Endpoint-specific request models (avoid requiring 'role' in body)
