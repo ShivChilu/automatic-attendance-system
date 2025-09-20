@@ -1444,7 +1444,7 @@ async def create_teacher(payload: TeacherCreateRequest, current: dict = Depends(
         logger.warning(f"Brevo send failed: {email_result.get('error')}")
     return UserPublic(
         id=user_doc["id"], full_name=user_doc["full_name"], email=user_doc["email"], role='TEACHER',
-        phone=user_doc.get("phone"), school_id=school_id, subject=user_doc.get("subject"), section_id=user_doc.get("section_id"), created_at=user_doc["created_at"]
+        phone=user_doc.get("phone"), school_id=school_id, subject=user_doc.get("subject"), section_id=user_doc.get("section_id"), section_ids=user_doc.get("section_ids"), all_sections=bool(user_doc.get("all_sections")), created_at=user_doc["created_at"]
     )
 
 @api.post("/users/coadmins", response_model=UserPublic)
