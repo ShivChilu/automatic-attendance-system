@@ -600,6 +600,9 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
           )}
         </div>
       );
+    } else if (currentSection === 'announcements') {
+      const Announcements = require('./components/Announcements.jsx').default;
+      return <Announcements me={me} />;
     } else if (currentSection === 'teachers') {
       return (
         <div className="card wide animate-slide-in">
