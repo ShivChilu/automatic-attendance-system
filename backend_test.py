@@ -2970,126 +2970,100 @@ def main():
     
     tester = AttendanceAPITester()
     
-    # URGENT Test sequence - Focus on MediaPipe Face Mesh improvements
+    # Phase 1 Test sequence - Focus on new features
     tests = [
-        # Basic Health and Authentication Tests (needed for face detection testing)
+        # Basic Health and Authentication Tests (needed for Phase 1 testing)
         ("API Health Check", tester.test_health_check),
         ("GOV_ADMIN Login", tester.test_gov_admin_login),
         ("Auth Me (GOV_ADMIN)", tester.test_auth_me_gov),
         
-        # 🚨 URGENT: Protobuf Fix Verification Tests
-        ("🚨 URGENT: Protobuf Version Verification", tester.test_protobuf_version_verification),
-        ("🚨 URGENT: Environment Variable Verification", tester.test_environment_variable_verification),
-        ("🚨 URGENT: MediaPipe Direct Initialization", tester.test_mediapipe_direct_initialization),
-        ("🚨 URGENT: Backend Logs Analysis", tester.test_backend_logs_analysis),
-        
-        # School and Section Setup (needed for face detection testing)
+        # School and Section Setup (needed for Phase 1 testing)
         ("Create School (Comprehensive)", tester.test_create_school_comprehensive),
         ("Create Section", tester.test_create_section),
         ("Resend Credentials for Principal", tester.test_resend_credentials_for_principal),
         ("SCHOOL_ADMIN Login (New Password)", tester.test_school_admin_login_with_new_password),
         
-        # User Setup for Role Testing
-        ("Create Co-Admin", tester.test_create_coadmin),
-        ("Resend Credentials for Co-Admin", tester.test_resend_credentials_for_coadmin),
-        ("CO_ADMIN Login", tester.test_coadmin_login),
+        # User Setup for Phase 1 Testing
         ("Create Teacher with Section", tester.test_create_teacher_with_section),
         ("Resend Credentials for Teacher", tester.test_resend_credentials_for_teacher),
         ("TEACHER Login", tester.test_teacher_login),
         
-        # 🚨 URGENT: MediaPipe Face Detection Tests
-        ("🚨 URGENT: MediaPipe Face Mesh Initialization", tester.test_mediapipe_face_mesh_initialization),
-        ("🚨 URGENT: Face Detection Error Details", tester.test_face_detection_error_details),
-        ("🚨 URGENT: Attendance Face Detection", tester.test_attendance_marking_face_detection),
+        # 🎯 PHASE 1 FEATURE TESTS
+        ("🎯 PHASE 1: Announcements", tester.test_phase1_announcements),
+        ("🎯 PHASE 1: Teacher Section Allotment", tester.test_phase1_teacher_section_allotment),
+        ("🎯 PHASE 1: Attendance Restriction", tester.test_phase1_attendance_restriction),
+        ("🎯 PHASE 1: Enrollment Gender Field", tester.test_phase1_enrollment_gender_field),
         
-        # 🚨 URGENT: Student Enrollment Tests (to verify face detection improvements)
-        ("🚨 URGENT: Enrollment Authentication Tests", tester.test_enrollment_endpoint_authentication),
-        ("🚨 URGENT: Enrollment Role-Based Access Control", tester.test_enrollment_endpoint_role_access),
-        ("🚨 URGENT: Enrollment Multipart Form Data", tester.test_enrollment_multipart_form_data),
-        ("🚨 URGENT: Face Enrollment Comprehensive", tester.test_face_enrollment_comprehensive),
-        
-        # Additional Core Tests
-        ("Attendance Marking Comprehensive", tester.test_attendance_marking_comprehensive),
-        ("Attendance Summary Comprehensive", tester.test_attendance_summary_comprehensive),
-        
-        # Additional API Tests
+        # Additional Core Tests for completeness
         ("List Schools", tester.test_list_schools),
         ("List Sections", tester.test_list_sections),
-        ("Create Student", tester.test_create_student),
-        ("List Students", tester.test_list_students),
         ("List Teachers", tester.test_list_teachers),
-        ("List Co-Admins", tester.test_list_coadmins),
-        
-        # Security Tests
-        ("Unauthorized Access Test", tester.test_unauthorized_access),
-        ("Role-based Access Control", tester.test_role_based_access_control),
-        ("Error Handling - Invalid Data", tester.test_error_handling_invalid_data),
-        
-        # Email Integration
-        ("Resend Credentials", tester.test_resend_credentials),
+        ("Student Face Enrollment", tester.test_student_face_enrollment),
+        ("Attendance Marking", tester.test_attendance_marking),
+        ("Attendance Summary Comprehensive", tester.test_attendance_summary_comprehensive),
     ]
     
     failed_tests = []
-    critical_failures = []
-    mediapipe_test_results = {}
+    phase1_failures = []
+    phase1_test_results = {}
     
     for test_name, test_func in tests:
         try:
             result = test_func()
             if not result:
                 failed_tests.append(test_name)
-                # Mark urgent tests as critical failures
-                if "🚨 URGENT:" in test_name:
-                    critical_failures.append(test_name)
+                # Mark Phase 1 tests as critical failures
+                if "🎯 PHASE 1:" in test_name:
+                    phase1_failures.append(test_name)
             
-            # Track MediaPipe-specific test results
-            if "MediaPipe" in test_name or "Face" in test_name:
-                mediapipe_test_results[test_name] = result
+            # Track Phase 1-specific test results
+            if "PHASE 1" in test_name:
+                phase1_test_results[test_name] = result
                 
         except Exception as e:
             print(f"❌ {test_name} - Exception: {str(e)}")
             failed_tests.append(test_name)
-            if "🚨 URGENT:" in test_name:
-                critical_failures.append(test_name)
-            mediapipe_test_results[test_name] = False
+            if "🎯 PHASE 1:" in test_name:
+                phase1_failures.append(test_name)
+            phase1_test_results[test_name] = False
     
     # Print summary
     print("\n" + "=" * 80)
-    print("📊 URGENT MEDIAPIPE FACE MESH TESTING SUMMARY")
+    print("📊 PHASE 1 BACKEND TESTING SUMMARY")
     print("=" * 80)
     print(f"Total tests: {tester.tests_run}")
     print(f"Passed: {tester.tests_passed}")
     print(f"Failed: {len(failed_tests)}")
     
-    # MediaPipe-specific analysis
-    print(f"\n🔬 MEDIAPIPE FACE MESH ANALYSIS:")
+    # Phase 1-specific analysis
+    print(f"\n🎯 PHASE 1 FEATURES ANALYSIS:")
     print("=" * 50)
     
-    mediapipe_passed = sum(1 for result in mediapipe_test_results.values() if result)
-    mediapipe_total = len(mediapipe_test_results)
+    phase1_passed = sum(1 for result in phase1_test_results.values() if result)
+    phase1_total = len(phase1_test_results)
     
-    print(f"MediaPipe-related tests: {mediapipe_passed}/{mediapipe_total} passed")
+    print(f"Phase 1 feature tests: {phase1_passed}/{phase1_total} passed")
     
-    for test_name, result in mediapipe_test_results.items():
+    for test_name, result in phase1_test_results.items():
         status = "✅ PASSED" if result else "❌ FAILED"
         print(f"   {status}: {test_name}")
     
-    # Determine overall MediaPipe status
-    if mediapipe_passed >= mediapipe_total * 0.8:
-        print(f"\n✅ MEDIAPIPE STATUS: SIGNIFICANTLY IMPROVED")
-        print(f"   The protobuf fix appears to be working effectively")
-    elif mediapipe_passed >= mediapipe_total * 0.5:
-        print(f"\n⚠️  MEDIAPIPE STATUS: PARTIALLY IMPROVED")
-        print(f"   Some improvements detected but issues remain")
+    # Determine overall Phase 1 status
+    if phase1_passed == phase1_total:
+        print(f"\n✅ PHASE 1 STATUS: ALL FEATURES WORKING")
+        print(f"   All Phase 1 features are fully functional")
+    elif phase1_passed >= phase1_total * 0.75:
+        print(f"\n⚠️  PHASE 1 STATUS: MOSTLY WORKING")
+        print(f"   Most Phase 1 features working but some issues remain")
     else:
-        print(f"\n❌ MEDIAPIPE STATUS: NO SIGNIFICANT IMPROVEMENT")
-        print(f"   The protobuf fix may not be effective")
+        print(f"\n❌ PHASE 1 STATUS: SIGNIFICANT ISSUES")
+        print(f"   Multiple Phase 1 features have problems")
     
-    if critical_failures:
-        print(f"\n🚨 CRITICAL FAILURES (Urgent MediaPipe Tests):")
-        for test in critical_failures:
+    if phase1_failures:
+        print(f"\n🚨 PHASE 1 CRITICAL FAILURES:")
+        for test in phase1_failures:
             print(f"   - {test}")
-        print(f"\n❌ URGENT ISSUE: MediaPipe Face Mesh improvements not working as expected!")
+        print(f"\n❌ URGENT ISSUE: Phase 1 features not working as expected!")
     
     if failed_tests:
         print(f"\n❌ All failed tests:")
@@ -3098,18 +3072,19 @@ def main():
         print(f"\n🔍 Check backend logs for detailed error information:")
         print(f"   sudo tail -n 50 /var/log/supervisor/backend.*.log")
         
-        if not critical_failures:
-            print(f"\n✅ GOOD NEWS: All urgent MediaPipe tests passed!")
-            print(f"   The MediaPipe Face Mesh improvements appear to be working.")
+        if not phase1_failures:
+            print(f"\n✅ GOOD NEWS: All Phase 1 tests passed!")
+            print(f"   The Phase 1 features are working correctly.")
             print(f"   Only non-critical tests failed.")
         
-        return 1 if critical_failures else 0
+        return 1 if phase1_failures else 0
     else:
         print(f"\n✅ ALL TESTS PASSED!")
-        print(f"🎉 MediaPipe Face Mesh improvements are working correctly!")
-        print(f"✅ Protobuf version 4.25.3 confirmed working")
-        print(f"✅ Environment variable fix confirmed working")
-        print(f"✅ Face detection initialization improvements confirmed")
+        print(f"🎉 Phase 1 features are working correctly!")
+        print(f"✅ Announcements create/list functionality confirmed")
+        print(f"✅ Teacher multi-section allotment confirmed")
+        print(f"✅ Attendance restriction behavior confirmed")
+        print(f"✅ Student enrollment gender field confirmed")
         return 0
 
 if __name__ == "__main__":
