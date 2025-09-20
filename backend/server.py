@@ -731,6 +731,7 @@ async def enroll_student(
     name: str = Form(...),
     section_id: str = Form(...),
     parent_mobile: Optional[str] = Form(None),
+    gender: Optional[str] = Form(None),
     has_twin: bool = Form(False),
     twin_group_id: Optional[str] = Form(None),
     twin_of: Optional[str] = Form(None),
