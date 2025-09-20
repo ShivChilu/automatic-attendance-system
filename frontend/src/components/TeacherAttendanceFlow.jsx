@@ -252,8 +252,8 @@ export default function TeacherAttendanceFlow({ me }) {
               </div>
               <div className="flex gap-2">
                 <Button className="btn_secondary" onClick={refreshTodaySessions}>🔁 Refresh Sessions</Button>
-                {!locked && (
-                  <Button className="btn_success" onClick={submitSession}>✅ Submit Attendance</Button>
+                {(!locked || canEditLocked) && (
+                  <Button className="btn_success" onClick={submitSession} disabled={locked && !canEditLocked}>✅ Submit Attendance</Button>
                 )}
               </div>
             </div>
