@@ -480,6 +480,8 @@ async def me(current_user: dict = Depends(get_current_user)):
         school_id=current_user.get("school_id"),
         subject=current_user.get("subject"),
         section_id=current_user.get("section_id"),
+        section_ids=current_user.get("section_ids"),
+        all_sections=bool(current_user.get("all_sections", False)),
         created_at=current_user["created_at"],
     )
 
