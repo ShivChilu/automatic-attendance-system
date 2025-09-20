@@ -423,7 +423,13 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
     e.preventDefault();
     try {
       if (roleType === 'TEACHER') {
-        await api.post('/users/teachers', { full_name: tName, email: tEmail, phone: tPhone || undefined, subject, section_id: teacherSection || undefined });
+        const payload = { full_name: tName, email: tEmail, phone: tPhone || undefined, subject };
+        if (teacherSection === 'ALL') {
+          payload.all_sections = true;
+        } else if (Array.isArray(teacherSection) && teacherSection.length > 0) {
+          payload.section_ids = teacherSection;
+        }
+        await api.post('/users/teachers', payload);
         alert('✅ Teacher created. Credentials emailed.');
       } else if (roleType === 'CO_ADMIN') {
         await api.post('/users/coadmins', { full_name: tName, email: tEmail, phone: tPhone || undefined });
