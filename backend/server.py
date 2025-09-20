@@ -1216,6 +1216,174 @@ async def attendance_summary(section_id: str, date: Optional[str] = None, curren
     items = [AttendanceSummaryItem(student_id=s['id'], name=s['name'], present=s['id'] in present_ids, marked_at=time_by_id.get(s['id'])) for s in students]
     return AttendanceSummary(section_id=section_id, date=date, total=len(students), present_count=len(present_ids), items=items)
 
+# Teacher's today's attendance overview
+class TeacherTodayOverview(BaseModel):
+    date: str
+    total_sessions: int
+    total_students_marked: int
+    sections: List[Dict[str, Any]]
+    recent_activity: List[Dict[str, Any]]
+
+@api.get("/attendance/teacher/today", response_model=TeacherTodayOverview)
+async def teacher_today_overview(current: dict = Depends(require_roles('TEACHER'))):
+    today = datetime.now(timezone.utc).date().isoformat()
+    
+    # Get teacher's allowed sections
+    allowed_sections = []
+    if current.get("all_sections"):
+        sections = await db.sections.find({"school_id": current.get("school_id")}).to_list(10000)
+        allowed_sections = [s['id'] for s in sections]
+    else:
+        if current.get("section_ids"):
+            allowed_sections = list(current.get("section_ids") or [])
+        elif current.get("section_id"):
+            allowed_sections = [current.get("section_id")]
+    
+    # Get today's sessions
+    sessions = await db.attendance_sessions.find({
+        "teacher_id": current["id"],
+        "date": today
+    }).to_list(100)
+    
+    # Get today's attendance records
+    attendance_records = await db.attendance.find({
+        "teacher_id": current["id"],
+        "date": today,
+        "status": "Present"
+    }).to_list(1000)
+    
+    # Get section details
+    section_details = []
+    for section_id in allowed_sections:
+        section = await db.sections.find_one({"id": section_id})
+        if section:
+            # Count students in this section
+            student_count = await db.students.count_documents({"section_id": section_id})
+            # Count present today
+            present_count = await db.attendance.count_documents({
+                "section_id": section_id,
+                "date": today,
+                "status": "Present"
+            })
+            section_details.append({
+                "section_id": section_id,
+                "section_name": section.get("name", "Unknown"),
+                "grade": section.get("grade"),
+                "total_students": student_count,
+                "present_today": present_count,
+                "attendance_percentage": round((present_count / max(1, student_count)) * 100, 1)
+            })
+    
+    # Get recent activity (last 10 attendance marks)
+    recent_activity = []
+    for record in attendance_records[:10]:
+        student = await db.students.find_one({"id": record["student_id"]})
+        section = await db.sections.find_one({"id": record["section_id"]})
+        if student and section:
+            recent_activity.append({
+                "student_name": student.get("name", "Unknown"),
+                "section_name": section.get("name", "Unknown"),
+                "marked_at": record.get("timestamp").isoformat() if isinstance(record.get("timestamp"), datetime) else None,
+                "status": record.get("status", "Present")
+            })
+    
+    return TeacherTodayOverview(
+        date=today,
+        total_sessions=len(sessions),
+        total_students_marked=len(attendance_records),
+        sections=section_details,
+        recent_activity=recent_activity
+    )
+
+# Principal's school overview for today
+class PrincipalTodayOverview(BaseModel):
+    date: str
+    school_name: str
+    total_sections: int
+    total_students: int
+    total_present: int
+    attendance_percentage: float
+    sections: List[Dict[str, Any]]
+    teachers_activity: List[Dict[str, Any]]
+
+@api.get("/attendance/principal/today", response_model=PrincipalTodayOverview)
+async def principal_today_overview(current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN'))):
+    today = datetime.now(timezone.utc).date().isoformat()
+    school_id = current.get("school_id")
+    
+    if not school_id:
+        raise HTTPException(status_code=400, detail="No school associated")
+    
+    # Get school details
+    school = await db.schools.find_one({"id": school_id})
+    school_name = school.get("name", "Unknown School") if school else "Unknown School"
+    
+    # Get all sections in this school
+    sections = await db.sections.find({"school_id": school_id}).to_list(1000)
+    section_ids = [s['id'] for s in sections]
+    
+    # Get total students
+    total_students = await db.students.count_documents({"section_id": {"$in": section_ids}})
+    
+    # Get today's attendance
+    attendance_records = await db.attendance.find({
+        "section_id": {"$in": section_ids},
+        "date": today,
+        "status": "Present"
+    }).to_list(10000)
+    total_present = len(attendance_records)
+    
+    # Get section-wise details
+    section_details = []
+    for section in sections:
+        student_count = await db.students.count_documents({"section_id": section["id"]})
+        present_count = await db.attendance.count_documents({
+            "section_id": section["id"],
+            "date": today,
+            "status": "Present"
+        })
+        section_details.append({
+            "section_id": section["id"],
+            "section_name": section.get("name", "Unknown"),
+            "grade": section.get("grade"),
+            "total_students": student_count,
+            "present_today": present_count,
+            "attendance_percentage": round((present_count / max(1, student_count)) * 100, 1)
+        })
+    
+    # Get teachers' activity
+    teachers = await db.users.find({
+        "role": "TEACHER",
+        "school_id": school_id
+    }).to_list(100)
+    
+    teachers_activity = []
+    for teacher in teachers:
+        teacher_attendance_count = await db.attendance.count_documents({
+            "teacher_id": teacher["id"],
+            "date": today,
+            "status": "Present"
+        })
+        teachers_activity.append({
+            "teacher_id": teacher["id"],
+            "teacher_name": teacher.get("full_name", "Unknown"),
+            "students_marked": teacher_attendance_count,
+            "subject": teacher.get("subject", "N/A")
+        })
+    
+    attendance_percentage = round((total_present / max(1, total_students)) * 100, 1) if total_students > 0 else 0
+    
+    return PrincipalTodayOverview(
+        date=today,
+        school_name=school_name,
+        total_sections=len(sections),
+        total_students=total_students,
+        total_present=total_present,
+        attendance_percentage=attendance_percentage,
+        sections=section_details,
+        teachers_activity=teachers_activity
+    )
+
 
 # ---------- Daily Analytics Endpoints ----------
 class SectionDailyItem(BaseModel):

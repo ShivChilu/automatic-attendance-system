@@ -12,7 +12,13 @@ function TimeSelect({ label, value, onChange }) {
       for (let m = 0; m < 60; m += 15) {
         const hh = String(h).padStart(2, "0");
         const mm = String(m).padStart(2, "0");
-        arr.push(`${hh}:${mm}`);
+        const time24 = `${hh}:${mm}`;
+        const time12 = new Date(`2000-01-01T${time24}`).toLocaleTimeString('en-US', { 
+          hour12: true, 
+          hour: 'numeric', 
+          minute: '2-digit' 
+        });
+        arr.push({ value: time24, display: time12 });
       }
     }
     return arr;
@@ -23,7 +29,7 @@ function TimeSelect({ label, value, onChange }) {
       <select className="select" value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">Select</option>
         {times.map((t) => (
-          <option key={t} value={t}>{t}</option>
+          <option key={t.value} value={t.value}>{t.display}</option>
         ))}
       </select>
     </div>
@@ -319,7 +325,7 @@ export default function TeacherAttendanceFlow({ me }) {
                             {st.status}
                           </span>
                         </td>
-                        <td><span className="text-xs text-gray-500">{st.marked_at ? new Date(st.marked_at).toLocaleTimeString() : '-'}</span></td>
+                        <td><span className="text-xs text-gray-500">{st.marked_at ? new Date(st.marked_at).toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit' }) : '-'}</span></td>
                         {(!locked || canEditLocked) && (
                           <td style={{display:'flex', gap:'0.5rem'}}>
                             <Button className="btn_success" onClick={()=> manualMark(st.student_id, 'Present')} disabled={locked && !canEditLocked}>Mark Present</Button>

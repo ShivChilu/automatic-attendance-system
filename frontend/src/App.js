@@ -12,12 +12,14 @@ import EnrollmentWithFace from "./components/EnrollmentWithFace";
 import TeacherScan from "./components/TeacherScan";
 import Sidebar from "./components/Sidebar";
 import TeacherAttendanceFlow from "./components/TeacherAttendanceFlow.jsx";
+import TeacherTodayDashboard from "./components/TeacherTodayDashboard.jsx";
+import PrincipalTodayDashboard from "./components/PrincipalTodayDashboard.jsx";
 import AnalyticsGov from "./components/AnalyticsGov.jsx";
 import AnalyticsSchool from "./components/AnalyticsSchool.jsx";
 function LiveClock(){
   const [now, setNow] = useState(new Date());
   useEffect(()=>{ const t = setInterval(()=> setNow(new Date()), 1000); return ()=> clearInterval(t); },[]);
-  return <div className="text-sm text-gray-700">{now.toLocaleTimeString()}</div>;
+  return <div className="text-sm text-gray-700">{now.toLocaleTimeString('en-US', { hour12: true, hour: 'numeric', minute: '2-digit', second: '2-digit' })}</div>;
 }
 
 
@@ -813,29 +815,10 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
       );
     } else if (currentSection === 'school-stats') {
       return <AnalyticsSchool />;
+    } else if (currentSection === 'dashboard') {
+      return <PrincipalTodayDashboard me={me} />;
     } else {
-      return (
-        <>
-          <HeroSection 
-            title={school ? `${school.name}` : "School Dashboard"}
-            subtitle={`${me?.role.replace('_', ' ')} Portal • ${me?.full_name}`}
-            backgroundImage="https://images.unsplash.com/photo-1580582932707-520aed937b7b"
-          />
-          <div className="grid" style={{display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:'1rem'}}>
-            <div onClick={()=>onSectionChange('school-stats')} style={{cursor:'pointer'}}>
-              <StatsCard title="Analytics" value="View" />
-            </div>
-          </div>
-          <div className="card wide animate-slide-in" style={{marginTop:'1rem'}}>
-            <div style={{display:'flex', gap:'0.75rem', flexWrap:'wrap'}}>
-              <Button className="btn_primary" onClick={()=>onSectionChange('sections')}>📚 Go to Sections</Button>
-              <Button className="btn_primary" onClick={()=>onSectionChange('students')}>👨‍🎓 Go to Students</Button>
-              <Button className="btn_primary" onClick={()=>onSectionChange('teachers')}>👨‍🏫 Go to Teachers</Button>
-              <Button className="btn_secondary" onClick={()=>onSectionChange('enrollment')}>🎭 Face Enrollment</Button>
-            </div>
-          </div>
-        </>
-      );
+      return <PrincipalTodayDashboard me={me} />;
     }
   };
 
@@ -851,6 +834,8 @@ function TeacherView({ me, currentSection, onSectionChange }) {
   const renderContent = () => {
     if (currentSection === 'scan-attendance') {
       return <TeacherAttendanceFlow me={me} />;
+    } else if (currentSection === 'dashboard') {
+      return <TeacherTodayDashboard me={me} onSectionChange={onSectionChange} />;
     } else {
       const Announcements = require('./components/Announcements.jsx').default;
       return (
@@ -869,7 +854,7 @@ function TeacherView({ me, currentSection, onSectionChange }) {
           <div className="card wide" style={{marginTop:'0.75rem'}}>
             <Announcements me={me} />
           </div>
-          <TeacherAttendanceFlow me={me} />
+          <TeacherTodayDashboard me={me} onSectionChange={onSectionChange} />
         </>
       );
     }
