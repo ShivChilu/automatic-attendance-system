@@ -587,6 +587,23 @@ async def update_section(section_id: str, payload: SectionUpdate, current: dict 
     return Section(**updated_sec)
 
 # ---------- Student Face Enrollment & Attendance ----------
+# Announcements models
+class AnnouncementCreate(BaseModel):
+    title: str
+    description: str
+    target_all: bool = False
+    target_teacher_ids: Optional[List[str]] = None  # if not target_all
+
+class AnnouncementPublic(BaseModel):
+    id: str
+    school_id: str
+    created_by: str
+    title: str
+    description: str
+    target_all: bool
+    target_teacher_ids: List[str] = []
+    created_at: datetime
+
 # List students
 @api.get("/students", response_model=List[Student])
 async def list_students(
