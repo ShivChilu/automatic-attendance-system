@@ -58,13 +58,20 @@ export default function TeacherAttendanceFlow({ me }) {
   const [todaySessions, setTodaySessions] = useState([]);
 
   useEffect(() => {
-    // Load sections to resolve assigned section name
+    // Load sections and compute allowed sections for this teacher
     api.get("/sections").then((res) => {
-      setSections(res.data || []);
-      if (me?.section_id) {
-        const s = res.data.find((x) => x.id === me.section_id);
-        if (s) setAssignedSection(s);
+      const secs = res.data || [];
+      setSections(secs);
+      let allowed = [];
+      if (me?.all_sections) {
+        allowed = secs;
+      } else if (Array.isArray(me?.section_ids) && me.section_ids.length > 0) {
+        allowed = secs.filter(s => me.section_ids.includes(s.id));
+      } else if (me?.section_id) {
+        allowed = secs.filter(s => s.id === me.section_id);
       }
+      setAllowedSections(allowed);
+      if (allowed.length > 0) setAssignedSection(allowed[0]);
     }).catch(() => {});
   }, [me]);
 
