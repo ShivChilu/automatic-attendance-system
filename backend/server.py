@@ -980,10 +980,21 @@ async def mark_attendance(
     confirmed_student_id: Optional[str] = Form(None),
     current: dict = Depends(require_roles('TEACHER')),
 ):
-    # Determine section
-    chosen_section = section_id or current.get("section_id")
-    if not chosen_section:
-        raise HTTPException(status_code=400, detail="No section specified and teacher has no default section")
+    # Determine section within allowed allotment
+    allowed: List[str] = []
+    if current.get("all_sections"):
+        secs = await db.sections.find({"school_id": current.get("school_id")}).to_list(10000)
+        allowed = [s['id'] for s in secs]
+    else:
+        if current.get("section_ids"):
+            allowed = list(current.get("section_ids") or [])
+        elif current.get("section_id"):
+            allowed = [current.get("section_id")]
+    if not allowed:
+        raise HTTPException(status_code=400, detail="Teacher has no section allotment. Please contact admin.")
+    chosen_section = section_id or (allowed[0] if allowed else None)
+    if not chosen_section or chosen_section not in allowed:
+        raise HTTPException(status_code=403, detail="Not allowed for this section")
     # Validate session if provided
     if session_id:
         ses = await db.attendance_sessions.find_one({"id": session_id})
