@@ -214,6 +214,7 @@ class StudentUpdate(BaseModel):
 class Student(BaseModel):
     id: str
     name: str
+    gender: Optional[Literal['Male','Female','Other']] = None
     student_code: str = ""
     roll_no: Optional[str] = None
     section_id: str
