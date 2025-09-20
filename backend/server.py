@@ -1501,6 +1501,75 @@ async def delete_student(student_id: str, current: dict = Depends(require_roles(
     await db.students.delete_one({"id": student_id})
     return {"deleted": True}
 
+
+# ----- Student management helpers (Phase 2) -----
+class StudentChangeSection(BaseModel):
+    section_id: str
+
+class StudentAttendanceItem(BaseModel):
+    id: str
+    date: str
+    status: Literal['Present','Absent']
+    timestamp: Optional[datetime] = None
+    session_id: Optional[str] = None
+
+class StudentDetailResponse(BaseModel):
+    student: Student
+    attendance: List[StudentAttendanceItem]
+
+@api.post("/students/{student_id}/change-section")
+async def change_student_section(student_id: str, payload: StudentChangeSection, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'GOV_ADMIN'))):
+    stu = await db.students.find_one({"id": student_id})
+    if not stu:
+        raise HTTPException(status_code=404, detail="Student not found")
+    target_sec = await db.sections.find_one({"id": payload.section_id})
+    if not target_sec:
+        raise HTTPException(status_code=404, detail="Target section not found")
+    # Role checks
+    if current['role'] == 'SCHOOL_ADMIN':
+        # Both current and target sections must belong to admin's school
+        cur_sec = await db.sections.find_one({"id": stu.get("section_id")})
+        if not cur_sec or cur_sec.get('school_id') != current.get('school_id') or target_sec.get('school_id') != current.get('school_id'):
+            raise HTTPException(status_code=403, detail="Not allowed")
+    await db.students.update_one({"id": student_id}, {"$set": {"section_id": payload.section_id}})
+    return {"ok": True}
+
+@api.get("/students/{student_id}/detail", response_model=StudentDetailResponse)
+async def student_detail(student_id: str, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER'))):
+    stu = await db.students.find_one({"id": student_id})
+    if not stu:
+        raise HTTPException(status_code=404, detail="Student not found")
+    # Permission check
+    if current['role'] == 'TEACHER':
+        allowed: List[str] = []
+        if current.get('all_sections'):
+            secs = await db.sections.find({"school_id": current.get('school_id')}).to_list(10000)
+            allowed = [s['id'] for s in secs]
+        else:
+            if current.get('section_ids'):
+                allowed = list(current.get('section_ids') or [])
+            elif current.get('section_id'):
+                allowed = [current.get('section_id')]
+        if stu.get('section_id') not in allowed:
+            raise HTTPException(status_code=403, detail="Not allowed")
+    elif current['role'] in ('SCHOOL_ADMIN', 'CO_ADMIN'):
+        # Must be same school
+        sec = await db.sections.find_one({"id": stu.get('section_id')})
+        if not sec or sec.get('school_id') != current.get('school_id'):
+            raise HTTPException(status_code=403, detail="Not allowed")
+    # Attendance history (last 30)
+    atts = await db.attendance.find({"student_id": student_id}).sort("timestamp", -1).limit(30).to_list(100)
+    att_items: List[StudentAttendanceItem] = []
+    for a in atts:
+        att_items.append(StudentAttendanceItem(
+            id=a.get('id', str(uuid.uuid4())),
+            date=a.get('date', datetime.now(timezone.utc).date().isoformat()),
+            status=a.get('status', 'Present'),
+            timestamp=a.get('timestamp') if isinstance(a.get('timestamp'), datetime) else None,
+            session_id=a.get('session_id')
+        ))
+    return StudentDetailResponse(student=Student(**stu), attendance=att_items)
+
 # Users
 ALLOWED_SUBJECTS = ["Math", "Science", "English", "Social", "Telugu", "Hindi", "Other"]
 
