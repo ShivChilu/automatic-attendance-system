@@ -159,6 +159,16 @@ export default function EnrollmentWithFace({ sections = [], onEnrolled }) {
           </div>
 
           <div className="form_row">
+            <Label className="form_label">⚧️ Gender</Label>
+            <select className="select" value={gender} onChange={(e)=> setGender(e.target.value)}>
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div className="form_row">
             <Label className="form_label">📱 Parent's Mobile</Label>
             <Input 
               value={parentMobile} 
