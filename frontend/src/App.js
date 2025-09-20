@@ -757,11 +757,20 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
                   </Select>
                 </div>
                 <div className="form_row">
-                  <Label className="form_label" style={{ color: '#374151' }}>Assign to Section</Label>
-                  <select className="select" value={teacherSection} onChange={(e) => setTeacherSection(e.target.value)}>
-                    <option value="">No specific section</option>
-                    {sections.map((s) => (<option key={s.id} value={s.id}>{s.name} {s.grade ? `(Grade ${s.grade})` : ''}</option>))}
-                  </select>
+                  <Label className="form_label" style={{ color: '#374151' }}>Assign Sections</Label>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input type="checkbox" onChange={(e)=> setTeacherSection(e.target.checked ? 'ALL' : '')} checked={teacherSection==='ALL'} />
+                      All sections in school
+                    </label>
+                    <select className="select" multiple value={Array.isArray(teacherSection)? teacherSection : []} onChange={(e)=>{
+                      const vals = Array.from(e.target.selectedOptions).map(o=>o.value);
+                      setTeacherSection(vals);
+                    }} disabled={teacherSection==='ALL'}>
+                      {sections.map((s) => (<option key={s.id} value={s.id}>{s.name}{s.grade ? ` (Grade ${s.grade})` : ''}</option>))}
+                    </select>
+                    <div className="text-xs text-gray-500">Hold Ctrl/Command to select multiple.</div>
+                  </div>
                 </div>
               </>
             )}
