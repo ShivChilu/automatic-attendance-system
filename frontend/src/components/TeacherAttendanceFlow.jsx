@@ -40,6 +40,7 @@ function minuteOfDay(hhmm) {
 export default function TeacherAttendanceFlow({ me }) {
   const [sections, setSections] = useState([]);
   const [assignedSection, setAssignedSection] = useState(null);
+  const [allowedSections, setAllowedSections] = useState([]);
 
   // Step A inputs
   const [dateStr, setDateStr] = useState(() => new Date().toISOString().slice(0, 10));
