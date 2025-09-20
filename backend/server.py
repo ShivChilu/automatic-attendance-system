@@ -607,6 +607,67 @@ class AnnouncementPublic(BaseModel):
     target_teacher_ids: List[str] = []
     created_at: datetime
 
+
+# ---------- Announcements Endpoints ----------
+class AnnouncementsList(BaseModel):
+    items: List[AnnouncementPublic]
+
+@api.post("/announcements", response_model=AnnouncementPublic)
+async def create_announcement(payload: AnnouncementCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN'))):
+    school_id = current.get("school_id")
+    if not school_id:
+        raise HTTPException(status_code=400, detail="No school associated with admin")
+    target_ids: List[str] = []
+    if not payload.target_all:
+        if not payload.target_teacher_ids or not isinstance(payload.target_teacher_ids, list):
+            raise HTTPException(status_code=400, detail="Please choose at least one teacher or select All")
+        # Validate teachers belong to the same school
+        teacher_docs = await db.users.find({
+            "id": {"$in": payload.target_teacher_ids},
+            "role": "TEACHER",
+            "school_id": school_id,
+        }).to_list(10000)
+        valid = {t['id'] for t in teacher_docs}
+        if len(valid) != len(payload.target_teacher_ids):
+            raise HTTPException(status_code=400, detail="One or more selected teachers are invalid")
+        target_ids = list(valid)
+    ann_id = str(uuid.uuid4())
+    doc = {
+        "id": ann_id,
+        "school_id": school_id,
+        "created_by": current.get("id"),
+        "title": payload.title,
+        "description": payload.description,
+        "target_all": bool(payload.target_all),
+        "target_teacher_ids": target_ids,
+        "created_at": now_iso(),
+    }
+    await db.announcements.insert_one(doc)
+    return AnnouncementPublic(**doc)
+
+@api.get("/announcements", response_model=AnnouncementsList)
+async def list_announcements(school_id: Optional[str] = None, current: dict = Depends(require_roles('GOV_ADMIN', 'SCHOOL_ADMIN', 'CO_ADMIN', 'TEACHER'))):
+    q: Dict[str, Any] = {}
+    if current['role'] == 'TEACHER':
+        if not current.get('school_id'):
+            return {"items": []}
+        q = {
+            "school_id": current.get('school_id'),
+            "$or": [
+                {"target_all": True},
+                {"target_teacher_ids": current.get('id')},
+            ]
+        }
+    elif current['role'] in ('SCHOOL_ADMIN', 'CO_ADMIN'):
+        q = {"school_id": current.get('school_id')}
+    else:  # GOV_ADMIN
+        if school_id:
+            q = {"school_id": school_id}
+        else:
+            q = {}
+    items = await db.announcements.find(q).sort("created_at", -1).limit(200).to_list(500)
+    return {"items": [AnnouncementPublic(**i) for i in items]}
+
 # List students
 @api.get("/students", response_model=List[Student])
 async def list_students(
