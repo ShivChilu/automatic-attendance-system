@@ -65,8 +65,16 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
           items: [
             { id: 'sections', label: 'Manage Sections', icon: '📝' },
             { id: 'students', label: 'Student Management', icon: '👨‍🎓' },
-            { id: 'enrollment', label: 'Face Enrollment', icon: '🎭' },
-            { id: 'announcements', label: 'Announcements', icon: '📢' }
+            { id: 'enrollment', label: 'Face Enrollment', icon: '🎭' }
+          ]
+        },
+        {
+          section: 'communication',
+          title: 'Communication',
+          icon: '💬',
+          items: [
+            { id: 'announcements', label: 'Announcements', icon: '📢' },
+            { id: 'messages', label: 'Messages', icon: '📩' }
           ]
         },
         {
@@ -235,8 +243,9 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
         </button>
       )}
 
-      {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 lg:hidden">
+      {/* Mobile Bottom Navigation - Only for Teachers */}
+      {me?.role === 'TEACHER' && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 lg:hidden">
         <div className="grid grid-cols-5 h-16">
           {[
             { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
@@ -269,7 +278,8 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
             </button>
           ))}
         </div>
-      </div>
+        </div>
+      )}
     </>
   );
 };

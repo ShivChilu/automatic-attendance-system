@@ -18,6 +18,8 @@ import AttendanceHistory from "./components/AttendanceHistory.jsx";
 import StudentList from "./components/StudentList.jsx";
 import MyMessages from "./components/MyMessages.jsx";
 import Announcements from "./components/Announcements.jsx";
+import AdminAnnouncements from "./components/AdminAnnouncements.jsx";
+import AdminMessages from "./components/AdminMessages.jsx";
 import AnalyticsGov from "./components/AnalyticsGov.jsx";
 import AnalyticsSchool from "./components/AnalyticsSchool.jsx";
 function LiveClock(){
@@ -819,6 +821,10 @@ function SchoolAdminLike({ me, currentSection, onSectionChange }) {
       );
     } else if (currentSection === 'school-stats') {
       return <AnalyticsSchool />;
+    } else if (currentSection === 'announcements') {
+      return <AdminAnnouncements me={me} />;
+    } else if (currentSection === 'messages') {
+      return <AdminMessages me={me} />;
     } else if (currentSection === 'dashboard') {
       return <PrincipalTodayDashboard me={me} />;
     } else {
@@ -854,7 +860,7 @@ function TeacherView({ me, currentSection, onSectionChange }) {
     }
   };
   return (
-    <div className="pb-16 lg:pb-0">
+    <div>
       {renderContent()}
     </div>
   );
@@ -913,7 +919,7 @@ function App() {
           marginLeft: showSidebar ? (sidebarCollapsed ? '0' : '288px') : '0',
           transition: 'margin-left 0.3s ease',
           minHeight: 'calc(100vh - 70px)',
-          paddingBottom: '80px' // Add space for mobile bottom navigation
+          paddingBottom: (me?.role === 'TEACHER') ? '80px' : '0' // Only add space for teachers
         }}>
           {content}
         </main>
