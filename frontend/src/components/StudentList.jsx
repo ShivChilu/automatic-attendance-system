@@ -1,11 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
+import { Button } from "./ui/button";
 
 export default function StudentList({ me }) {
   const [sections, setSections] = useState([]);
   const [selectedSection, setSelectedSection] = useState('');
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [selectedColumns, setSelectedColumns] = useState({
+    rollNo: true,
+    name: true,
+    parentMobile: true,
+    enrollmentStatus: true
+  });
 
   const loadSections = async () => {
     try {
@@ -47,6 +56,66 @@ export default function StudentList({ me }) {
   }, [selectedSection]);
 
   const selectedSectionData = sections.find(s => s.id === selectedSection);
+
+  const downloadCSV = () => {
+    if (students.length === 0) {
+      alert('No students to download');
+      return;
+    }
+
+    // Prepare CSV headers based on selected columns
+    const headers = [];
+    if (selectedColumns.rollNo) headers.push('Roll No');
+    if (selectedColumns.name) headers.push('Student Name');
+    if (selectedColumns.parentMobile) headers.push('Parent Mobile');
+    if (selectedColumns.enrollmentStatus) headers.push('Enrollment Status');
+
+    // Prepare CSV data
+    const csvData = students
+      .sort((a, b) => {
+        const aRoll = a.roll_no || a.name;
+        const bRoll = b.roll_no || b.name;
+        return aRoll.localeCompare(bRoll, undefined, { numeric: true });
+      })
+      .map(student => {
+        const row = [];
+        if (selectedColumns.rollNo) row.push(student.roll_no || '');
+        if (selectedColumns.name) row.push(student.name);
+        if (selectedColumns.parentMobile) row.push(student.parent_mobile || '');
+        if (selectedColumns.enrollmentStatus) row.push(student.enrolled ? 'Enrolled' : 'Not Enrolled');
+        return row;
+      });
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    
+    const sectionName = selectedSectionData?.name || 'students';
+    const fileName = `${sectionName}_student_list_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.setAttribute('download', fileName);
+    
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setShowDownloadModal(false);
+  };
+
+  const toggleColumn = (column) => {
+    setSelectedColumns(prev => ({
+      ...prev,
+      [column]: !prev[column]
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -96,7 +165,18 @@ export default function StudentList({ me }) {
         {selectedSectionData && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Section Information</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Section Information</h3>
+                {students.length > 0 && (
+                  <button
+                    onClick={() => setShowDownloadModal(true)}
+                    className="mt-3 sm:mt-0 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+                  >
+                    <span>📥</span>
+                    <span>Download CSV</span>
+                  </button>
+                )}
+              </div>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -219,6 +299,79 @@ export default function StudentList({ me }) {
             </div>
           </div>
         )}
+
+        {/* Column Selection Modal */}
+        <Dialog open={showDownloadModal} onOpenChange={setShowDownloadModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Select Columns for Download</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Choose which columns you want to include in the CSV file:
+              </p>
+              <div className="space-y-3">
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedColumns.rollNo}
+                    onChange={() => toggleColumn('rollNo')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Roll Number</span>
+                </label>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedColumns.name}
+                    onChange={() => toggleColumn('name')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Student Name</span>
+                </label>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedColumns.parentMobile}
+                    onChange={() => toggleColumn('parentMobile')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Parent Mobile</span>
+                </label>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedColumns.enrollmentStatus}
+                    onChange={() => toggleColumn('enrollmentStatus')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Enrollment Status</span>
+                </label>
+              </div>
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  <strong>Preview:</strong> {Object.values(selectedColumns).filter(Boolean).length} column(s) will be exported
+                </p>
+              </div>
+            </div>
+            <DialogFooter className="flex flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDownloadModal(false)}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={downloadCSV}
+                disabled={Object.values(selectedColumns).every(col => !col)}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+              >
+                Download CSV
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

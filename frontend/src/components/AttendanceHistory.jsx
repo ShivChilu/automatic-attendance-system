@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Button } from "./ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 
 export default function AttendanceHistory({ me }) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
@@ -8,6 +9,13 @@ export default function AttendanceHistory({ me }) {
   const [loading, setLoading] = useState(false);
   const [sections, setSections] = useState([]);
   const [selectedSection, setSelectedSection] = useState('');
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [selectedColumns, setSelectedColumns] = useState({
+    rollNo: true,
+    name: true,
+    status: true,
+    markedAt: true
+  });
 
   const loadSections = async () => {
     try {
@@ -55,6 +63,66 @@ export default function AttendanceHistory({ me }) {
       hour: 'numeric', 
       minute: '2-digit' 
     });
+  };
+
+  const downloadCSV = () => {
+    if (!attendanceData || !attendanceData.items || attendanceData.items.length === 0) {
+      alert('No attendance data to download');
+      return;
+    }
+
+    // Prepare CSV headers based on selected columns
+    const headers = [];
+    if (selectedColumns.rollNo) headers.push('Roll No');
+    if (selectedColumns.name) headers.push('Student Name');
+    if (selectedColumns.status) headers.push('Status');
+    if (selectedColumns.markedAt) headers.push('Marked At');
+
+    // Prepare CSV data
+    const csvData = attendanceData.items
+      .sort((a, b) => {
+        const aRoll = a.roll_no || a.name;
+        const bRoll = b.roll_no || b.name;
+        return aRoll.localeCompare(bRoll, undefined, { numeric: true });
+      })
+      .map(student => {
+        const row = [];
+        if (selectedColumns.rollNo) row.push(student.roll_no || '');
+        if (selectedColumns.name) row.push(student.name);
+        if (selectedColumns.status) row.push(student.present ? 'Present' : 'Absent');
+        if (selectedColumns.markedAt) row.push(student.present ? formatTime(student.marked_at) : '-');
+        return row;
+      });
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    
+    const sectionName = sections.find(s => s.id === selectedSection)?.name || 'attendance';
+    const fileName = `${sectionName}_attendance_${selectedDate}.csv`;
+    link.setAttribute('download', fileName);
+    
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    setShowDownloadModal(false);
+  };
+
+  const toggleColumn = (column) => {
+    setSelectedColumns(prev => ({
+      ...prev,
+      [column]: !prev[column]
+    }));
   };
 
   return (
@@ -119,15 +187,28 @@ export default function AttendanceHistory({ me }) {
         {attendanceData && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Attendance Summary</h3>
-              <p className="text-sm text-gray-600 mt-1">
-                {new Date(selectedDate).toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </p>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Attendance Summary</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {new Date(selectedDate).toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
+                {attendanceData.items && attendanceData.items.length > 0 && (
+                  <button
+                    onClick={() => setShowDownloadModal(true)}
+                    className="mt-3 sm:mt-0 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 flex items-center space-x-2"
+                  >
+                    <span>📥</span>
+                    <span>Download CSV</span>
+                  </button>
+                )}
+              </div>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
@@ -245,6 +326,79 @@ export default function AttendanceHistory({ me }) {
             </div>
           </div>
         )}
+
+        {/* Column Selection Modal */}
+        <Dialog open={showDownloadModal} onOpenChange={setShowDownloadModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Select Columns for Download</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Choose which columns you want to include in the CSV file:
+              </p>
+              <div className="space-y-3">
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedColumns.rollNo}
+                    onChange={() => toggleColumn('rollNo')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Roll Number</span>
+                </label>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedColumns.name}
+                    onChange={() => toggleColumn('name')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Student Name</span>
+                </label>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedColumns.status}
+                    onChange={() => toggleColumn('status')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Attendance Status</span>
+                </label>
+                <label className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedColumns.markedAt}
+                    onChange={() => toggleColumn('markedAt')}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Marked At Time</span>
+                </label>
+              </div>
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  <strong>Preview:</strong> {Object.values(selectedColumns).filter(Boolean).length} column(s) will be exported
+                </p>
+              </div>
+            </div>
+            <DialogFooter className="flex flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDownloadModal(false)}
+                className="w-full sm:w-auto"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={downloadCSV}
+                disabled={Object.values(selectedColumns).every(col => !col)}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+              >
+                Download CSV
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
