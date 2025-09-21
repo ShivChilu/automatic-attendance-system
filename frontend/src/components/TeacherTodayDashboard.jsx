@@ -97,12 +97,12 @@ export default function TeacherTodayDashboard({ me, onSectionChange }) {
       {/* Header Section */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-4 sm:py-6">
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 truncate">
                 Teacher Dashboard
               </h1>
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 text-xs sm:text-sm text-gray-600 truncate">
                 {overview?.date ? new Date(overview.date).toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   year: 'numeric', 
@@ -111,7 +111,7 @@ export default function TeacherTodayDashboard({ me, onSectionChange }) {
                 }) : 'Loading...'}
               </p>
             </div>
-            <div className="mt-4 sm:mt-0">
+            <div className="mt-3 sm:mt-0 flex-shrink-0">
               <LiveClock />
             </div>
           </div>
@@ -120,6 +120,17 @@ export default function TeacherTodayDashboard({ me, onSectionChange }) {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Quick Action - Mark Attendance */}
+        <div className="mb-8">
+          <button
+            onClick={() => onSectionChange('scan-attendance')}
+            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-xl transition-colors duration-200 flex items-center justify-center space-x-3 shadow-lg hover:shadow-xl"
+          >
+            <span className="text-2xl">📸</span>
+            <span className="text-lg">Mark Attendance</span>
+          </button>
+        </div>
+
         {/* Statistics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard 

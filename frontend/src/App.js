@@ -14,6 +14,8 @@ import Sidebar from "./components/Sidebar";
 import TeacherAttendanceFlow from "./components/TeacherAttendanceFlow.jsx";
 import TeacherTodayDashboard from "./components/TeacherTodayDashboard.jsx";
 import PrincipalTodayDashboard from "./components/PrincipalTodayDashboard.jsx";
+import AttendanceHistory from "./components/AttendanceHistory.jsx";
+import StudentList from "./components/StudentList.jsx";
 import AnalyticsGov from "./components/AnalyticsGov.jsx";
 import AnalyticsSchool from "./components/AnalyticsSchool.jsx";
 function LiveClock(){
@@ -836,13 +838,17 @@ function TeacherView({ me, currentSection, onSectionChange }) {
       return <TeacherAttendanceFlow me={me} />;
     } else if (currentSection === 'dashboard') {
       return <TeacherTodayDashboard me={me} onSectionChange={onSectionChange} />;
+    } else if (currentSection === 'attendance-history') {
+      return <AttendanceHistory me={me} />;
+    } else if (currentSection === 'student-list') {
+      return <StudentList me={me} />;
     } else {
       // Default to dashboard for any other section
       return <TeacherTodayDashboard me={me} onSectionChange={onSectionChange} />;
     }
   };
   return (
-    <div>
+    <div className="pb-16 lg:pb-0">
       {renderContent()}
     </div>
   );

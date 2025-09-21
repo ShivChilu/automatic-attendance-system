@@ -105,8 +105,7 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
           icon: '📸',
           items: [
             { id: 'scan-attendance', label: 'Scan Attendance', icon: '📷' },
-            { id: 'attendance-history', label: 'History', icon: '📅' },
-            { id: 'attendance-reports', label: 'Reports', icon: '📊' }
+            { id: 'attendance-history', label: 'History', icon: '📅' }
           ]
         },
         {
@@ -114,8 +113,7 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
           title: 'Students',
           icon: '👨‍🎓',
           items: [
-            { id: 'student-list', label: 'Student List', icon: '📝' },
-            { id: 'student-performance', label: 'Performance', icon: '📈' }
+            { id: 'student-list', label: 'Student List', icon: '📝' }
           ]
         }
       ];
@@ -135,8 +133,8 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
         />
       )}
       
-      {/* Sidebar */}
-      <div className={`fixed left-0 top-0 h-full bg-white bg-opacity-95 backdrop-filter backdrop-blur-xl border-r border-white border-opacity-20 z-50 transition-all duration-300 ${
+      {/* Sidebar - Hidden on mobile, visible on desktop */}
+      <div className={`hidden lg:block fixed left-0 top-0 h-full bg-white bg-opacity-95 backdrop-filter backdrop-blur-xl border-r border-white border-opacity-20 z-50 transition-all duration-300 ${
         isCollapsed ? '-translate-x-full lg:w-20' : 'w-80 lg:w-72'
       }`}>
         
@@ -173,7 +171,7 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
                   <button
                     key={item.id}
                     onClick={() => onSectionChange(item.id)}
-                    className={`w-full flex items-center px-3 py-3 rounded-xl transition-all duration-200 text-left ${
+                    className={`w-full flex items-center px-3 py-3 rounded-xl transition-all duration-200 text-left group ${
                       currentSection === item.id
                         ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105'
                         : 'text-gray-700 hover:bg-white hover:bg-opacity-50 hover:text-gray-900 hover:shadow-md'
@@ -182,6 +180,15 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
                     <span className="text-lg mr-3">{item.icon}</span>
                     {!isCollapsed && (
                       <span className="font-medium">{item.label}</span>
+                    )}
+                    {!isCollapsed && (
+                      <span className={`ml-auto transition-all duration-200 ${
+                        currentSection === item.id 
+                          ? 'text-white' 
+                          : 'text-gray-400 group-hover:text-gray-600'
+                      }`}>
+                        →
+                      </span>
                     )}
                   </button>
                 ))}
@@ -219,13 +226,25 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
         </button>
       )}
 
-      {/* Mobile Toggle Button */}
-      <button
-        onClick={() => { if (isCollapsed) toggle(); }}
-        className="fixed top-4 left-4 z-30 lg:hidden p-3 bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm rounded-xl shadow-lg border border-white border-opacity-30"
-      >
-        <span className="text-xl">☰</span>
-      </button>
+      {/* Mobile Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 lg:hidden">
+        <div className="grid grid-cols-4 h-16">
+          {menuItems.flatMap(section => section.items).slice(0, 4).map((item, index) => (
+            <button
+              key={item.id}
+              onClick={() => onSectionChange(item.id)}
+              className={`flex flex-col items-center justify-center space-y-1 transition-colors duration-200 ${
+                currentSection === item.id
+                  ? 'text-blue-600 bg-blue-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <span className="text-lg">{item.icon}</span>
+              <span className="text-xs font-medium">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </>
   );
 };
