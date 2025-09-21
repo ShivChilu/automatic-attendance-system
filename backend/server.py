@@ -1384,6 +1384,157 @@ async def principal_today_overview(current: dict = Depends(require_roles('SCHOOL
         teachers_activity=teachers_activity
     )
 
+# ---------- Messages and Announcements System ----------
+class MessageCreate(BaseModel):
+    recipient_id: Optional[str] = None  # If None, sends to all teachers
+    subject: str
+    content: str
+    is_announcement: bool = False
+
+class MessageResponse(BaseModel):
+    id: str
+    sender_id: str
+    sender_name: str
+    recipient_id: Optional[str]
+    recipient_name: Optional[str]
+    subject: str
+    content: str
+    is_announcement: bool
+    created_at: str
+    read: bool = False
+
+@api.post("/messages", response_model=MessageResponse)
+async def create_message(message: MessageCreate, current: dict = Depends(require_roles('SCHOOL_ADMIN', 'CO_ADMIN'))):
+    message_id = str(uuid.uuid4())
+    now = now_iso()
+    
+    # Get sender info
+    sender = await db.users.find_one({"id": current["id"]})
+    if not sender:
+        raise HTTPException(status_code=404, detail="Sender not found")
+    
+    if message.recipient_id:
+        # Personal message
+        recipient = await db.users.find_one({"id": message.recipient_id})
+        if not recipient:
+            raise HTTPException(status_code=404, detail="Recipient not found")
+        if recipient.get("school_id") != current.get("school_id"):
+            raise HTTPException(status_code=403, detail="Cannot send message to user from different school")
+        
+        message_doc = {
+            "id": message_id,
+            "sender_id": current["id"],
+            "sender_name": sender.get("full_name", "Unknown"),
+            "recipient_id": message.recipient_id,
+            "recipient_name": recipient.get("full_name", "Unknown"),
+            "subject": message.subject,
+            "content": message.content,
+            "is_announcement": False,
+            "created_at": now,
+            "read": False
+        }
+        await db.messages.insert_one(message_doc)
+        
+        return MessageResponse(
+            id=message_id,
+            sender_id=current["id"],
+            sender_name=sender.get("full_name", "Unknown"),
+            recipient_id=message.recipient_id,
+            recipient_name=recipient.get("full_name", "Unknown"),
+            subject=message.subject,
+            content=message.content,
+            is_announcement=False,
+            created_at=now,
+            read=False
+        )
+    else:
+        # Announcement to all teachers
+        teachers = await db.users.find({
+            "role": "TEACHER",
+            "school_id": current.get("school_id")
+        }).to_list(1000)
+        
+        if not teachers:
+            raise HTTPException(status_code=400, detail="No teachers found in school")
+        
+        # Create message for each teacher
+        messages_to_insert = []
+        for teacher in teachers:
+            messages_to_insert.append({
+                "id": str(uuid.uuid4()),
+                "sender_id": current["id"],
+                "sender_name": sender.get("full_name", "Unknown"),
+                "recipient_id": teacher["id"],
+                "recipient_name": teacher.get("full_name", "Unknown"),
+                "subject": message.subject,
+                "content": message.content,
+                "is_announcement": True,
+                "created_at": now,
+                "read": False
+            })
+        
+        await db.messages.insert_many(messages_to_insert)
+        
+        return MessageResponse(
+            id=message_id,
+            sender_id=current["id"],
+            sender_name=sender.get("full_name", "Unknown"),
+            recipient_id=None,
+            recipient_name=None,
+            subject=message.subject,
+            content=message.content,
+            is_announcement=True,
+            created_at=now,
+            read=False
+        )
+
+@api.get("/messages/my", response_model=List[MessageResponse])
+async def get_my_messages(current: dict = Depends(require_roles('TEACHER', 'SCHOOL_ADMIN', 'CO_ADMIN'))):
+    messages = await db.messages.find({
+        "recipient_id": current["id"]
+    }).sort("created_at", -1).to_list(100)
+    
+    return [MessageResponse(**msg) for msg in messages]
+
+@api.get("/messages/announcements", response_model=List[MessageResponse])
+async def get_announcements(current: dict = Depends(require_roles('TEACHER', 'SCHOOL_ADMIN', 'CO_ADMIN'))):
+    messages = await db.messages.find({
+        "recipient_id": current["id"],
+        "is_announcement": True
+    }).sort("created_at", -1).to_list(100)
+    
+    return [MessageResponse(**msg) for msg in messages]
+
+@api.get("/messages/personal", response_model=List[MessageResponse])
+async def get_personal_messages(current: dict = Depends(require_roles('TEACHER', 'SCHOOL_ADMIN', 'CO_ADMIN'))):
+    messages = await db.messages.find({
+        "recipient_id": current["id"],
+        "is_announcement": False
+    }).sort("created_at", -1).to_list(100)
+    
+    return [MessageResponse(**msg) for msg in messages]
+
+@api.put("/messages/{message_id}/read")
+async def mark_message_read(message_id: str, current: dict = Depends(require_roles('TEACHER', 'SCHOOL_ADMIN', 'CO_ADMIN'))):
+    result = await db.messages.update_one(
+        {"id": message_id, "recipient_id": current["id"]},
+        {"$set": {"read": True}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Message not found")
+    
+    return {"ok": True}
+
+@api.get("/messages/unread-count")
+async def get_unread_count(current: dict = Depends(require_roles('TEACHER', 'SCHOOL_ADMIN', 'CO_ADMIN'))):
+    count = await db.messages.count_documents({
+        "recipient_id": current["id"],
+        "read": False
+    })
+    
+    return {"unread_count": count}
+
 
 # ---------- Daily Analytics Endpoints ----------
 class SectionDailyItem(BaseModel):

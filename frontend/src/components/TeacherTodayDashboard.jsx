@@ -131,6 +131,71 @@ export default function TeacherTodayDashboard({ me, onSectionChange }) {
           </button>
         </div>
 
+        {/* Messages and Announcements Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* My Messages */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">My Messages</h3>
+                <button
+                  onClick={() => onSectionChange('my-messages')}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  View All →
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">Personal messages from Principal</p>
+            </div>
+            <div className="p-6">
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">📩</span>
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">Personal Messages</h4>
+                <p className="text-gray-600 mb-4">Check for direct messages from Principal or Co-Admin</p>
+                <button
+                  onClick={() => onSectionChange('my-messages')}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                >
+                  Check Messages
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Announcements */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Announcements</h3>
+                <button
+                  onClick={() => onSectionChange('announcements')}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                >
+                  View All →
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">Important school-wide updates</p>
+            </div>
+            <div className="p-6">
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">📢</span>
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">School Announcements</h4>
+                <p className="text-gray-600 mb-4">Stay updated with important school news</p>
+                <button
+                  onClick={() => onSectionChange('announcements')}
+                  className="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+                >
+                  View Announcements
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Statistics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard 

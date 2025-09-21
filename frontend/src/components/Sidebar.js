@@ -115,6 +115,15 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
           items: [
             { id: 'student-list', label: 'Student List', icon: '📝' }
           ]
+        },
+        {
+          section: 'communication',
+          title: 'Communication',
+          icon: '💬',
+          items: [
+            { id: 'my-messages', label: 'My Messages', icon: '📩' },
+            { id: 'announcements', label: 'Announcements', icon: '📢' }
+          ]
         }
       ];
     }
@@ -228,11 +237,27 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
 
       {/* Mobile Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 lg:hidden">
-        <div className="grid grid-cols-4 h-16">
-          {menuItems.flatMap(section => section.items).slice(0, 4).map((item, index) => (
+        <div className="grid grid-cols-5 h-16">
+          {[
+            { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
+            { id: 'scan-attendance', label: 'Scan', icon: '📷' },
+            { id: 'my-messages', label: 'Messages', icon: '📩' },
+            { id: 'attendance-history', label: 'History', icon: '📅' },
+            { id: 'profile', label: 'Profile', icon: '👤' }
+          ].map((item, index) => (
             <button
               key={item.id}
-              onClick={() => onSectionChange(item.id)}
+              onClick={() => {
+                if (item.id === 'profile') {
+                  // Show profile dropdown or handle logout
+                  if (confirm('Do you want to logout?')) {
+                    // This would need to be passed from parent component
+                    window.location.reload(); // Temporary solution
+                  }
+                } else {
+                  onSectionChange(item.id);
+                }
+              }}
               className={`flex flex-col items-center justify-center space-y-1 transition-colors duration-200 ${
                 currentSection === item.id
                   ? 'text-blue-600 bg-blue-50'

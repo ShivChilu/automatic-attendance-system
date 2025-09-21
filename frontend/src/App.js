@@ -16,6 +16,8 @@ import TeacherTodayDashboard from "./components/TeacherTodayDashboard.jsx";
 import PrincipalTodayDashboard from "./components/PrincipalTodayDashboard.jsx";
 import AttendanceHistory from "./components/AttendanceHistory.jsx";
 import StudentList from "./components/StudentList.jsx";
+import MyMessages from "./components/MyMessages.jsx";
+import Announcements from "./components/Announcements.jsx";
 import AnalyticsGov from "./components/AnalyticsGov.jsx";
 import AnalyticsSchool from "./components/AnalyticsSchool.jsx";
 function LiveClock(){
@@ -842,6 +844,10 @@ function TeacherView({ me, currentSection, onSectionChange }) {
       return <AttendanceHistory me={me} />;
     } else if (currentSection === 'student-list') {
       return <StudentList me={me} />;
+    } else if (currentSection === 'my-messages') {
+      return <MyMessages me={me} />;
+    } else if (currentSection === 'announcements') {
+      return <Announcements me={me} />;
     } else {
       // Default to dashboard for any other section
       return <TeacherTodayDashboard me={me} onSectionChange={onSectionChange} />;
@@ -874,11 +880,20 @@ function App() {
         <div className="brand">SmartAttend AI</div>
         {me && (
           <div className="user_box">
-            <div className="user_info">
+            <div className="user_info hidden sm:block">
               <div className="user_email" style={{ color: '#374151' }}>{me.email}</div>
               <div className="user_role" style={{ color: '#1e40af', backgroundColor: '#eff6ff' }}>{me.role.replace('_', ' ')}</div>
             </div>
-            <Button className="btn_secondary" onClick={() => setToken("")}> 
+            {/* Mobile Notifications Button */}
+            <button
+              onClick={() => setCurrentSection('my-messages')}
+              className="sm:hidden p-2 text-gray-600 hover:text-blue-600 transition-colors mr-2"
+              title="My Messages"
+            >
+              <span className="text-xl">📩</span>
+            </button>
+            {/* Desktop Logout Button */}
+            <Button className="btn_secondary hidden sm:block" onClick={() => setToken("")}> 
               🚪 Logout
             </Button>
           </div>
@@ -897,7 +912,8 @@ function App() {
           flex: 1, 
           marginLeft: showSidebar ? (sidebarCollapsed ? '0' : '288px') : '0',
           transition: 'margin-left 0.3s ease',
-          minHeight: 'calc(100vh - 70px)'
+          minHeight: 'calc(100vh - 70px)',
+          paddingBottom: '80px' // Add space for mobile bottom navigation
         }}>
           {content}
         </main>
