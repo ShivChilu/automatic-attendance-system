@@ -837,30 +837,12 @@ function TeacherView({ me, currentSection, onSectionChange }) {
     } else if (currentSection === 'dashboard') {
       return <TeacherTodayDashboard me={me} onSectionChange={onSectionChange} />;
     } else {
-      const Announcements = require('./components/Announcements.jsx').default;
-      return (
-        <>
-          <HeroSection 
-            title={school ? `${school.name}` : "Teacher Dashboard"}
-            subtitle={`Welcome back, ${me.full_name}`}
-            backgroundImage="https://images.unsplash.com/photo-1677442135703-1787eea5ce01"
-          />
-          <div className="card wide" style={{marginTop:'0.75rem'}}>
-            <div className="flex items-center justify-between">
-              <div className="text-gray-800 font-semibold">Current Time</div>
-              <LiveClock />
-            </div>
-          </div>
-          <div className="card wide" style={{marginTop:'0.75rem'}}>
-            <Announcements me={me} />
-          </div>
-          <TeacherTodayDashboard me={me} onSectionChange={onSectionChange} />
-        </>
-      );
+      // Default to dashboard for any other section
+      return <TeacherTodayDashboard me={me} onSectionChange={onSectionChange} />;
     }
   };
   return (
-    <div className="dash_grid">
+    <div>
       {renderContent()}
     </div>
   );

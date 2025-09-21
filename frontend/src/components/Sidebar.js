@@ -96,8 +96,7 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
           title: 'Overview',
           icon: '📊',
           items: [
-            { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-            { id: 'my-section', label: 'My Section', icon: '📚' }
+            { id: 'dashboard', label: 'Dashboard', icon: '🏠' }
           ]
         },
         {
