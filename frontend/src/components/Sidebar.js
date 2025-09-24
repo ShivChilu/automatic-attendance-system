@@ -150,9 +150,20 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
         />
       )}
       
-      {/* Sidebar - Hidden on mobile, visible on desktop */}
-      <div className={`hidden lg:block fixed left-0 top-0 h-full bg-white bg-opacity-95 backdrop-filter backdrop-blur-xl border-r border-white border-opacity-20 z-50 transition-all duration-300 ${
-        isCollapsed ? '-translate-x-full lg:w-20' : 'w-80 lg:w-72'
+      {/* Mobile Menu Toggle Button - Only for SCHOOL_ADMIN/CO_ADMIN */}
+      {(me?.role === 'SCHOOL_ADMIN' || me?.role === 'CO_ADMIN') && (
+        <button
+          onClick={toggle}
+          className="fixed top-4 left-4 z-50 lg:hidden p-2 bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm rounded-xl shadow-lg border border-white border-opacity-30"
+          title={isCollapsed ? 'Open menu' : 'Close menu'}
+        >
+          {isCollapsed ? '☰' : '✕'}
+        </button>
+      )}
+      
+      {/* Sidebar - Now visible on mobile when opened */}
+      <div className={`fixed left-0 top-0 h-full bg-white bg-opacity-95 backdrop-filter backdrop-blur-xl border-r border-white border-opacity-20 z-50 transition-all duration-300 ${
+        isCollapsed ? '-translate-x-full' : 'w-80 lg:w-72'
       }`}>
         
         {/* Header */}
