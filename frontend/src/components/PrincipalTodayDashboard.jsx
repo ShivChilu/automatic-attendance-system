@@ -155,7 +155,7 @@ export default function PrincipalTodayDashboard({ me }) {
 
       {/* Section-wise Breakdown */}
       {overview?.sections && overview.sections.length > 0 && (
-        <div className="card wide animate-slide-in">
+        <div className="bg-white bg-opacity-95 backdrop-filter backdrop-blur-xl border border-white border-opacity-20 rounded-2xl p-6 shadow-lg animate-slide-in">
           <h4 className="text-lg font-semibold mb-4 text-gray-800">📚 Section-wise Attendance</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {overview.sections.map((section) => (
