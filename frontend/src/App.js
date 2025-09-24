@@ -924,6 +924,7 @@ function App() {
             currentSection={currentSection} 
             onSectionChange={setCurrentSection}
             onToggle={(collapsed) => setSidebarCollapsed(collapsed)}
+            onLogout={() => setToken("")}
           />
         )}
         <main className={`flex-1 min-h-[calc(100vh-70px)] transition-all duration-300 ${
