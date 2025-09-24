@@ -403,7 +403,7 @@ function GovAdmin({ me, currentSection, onSectionChange }) {
   };
 
   return (
-    <div className="dash_grid">
+    <div className="w-full min-h-screen">
       {renderContent()}
     </div>
   );
