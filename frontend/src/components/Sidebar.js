@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
+const Sidebar = ({ me, currentSection, onSectionChange, onToggle, onLogout }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
