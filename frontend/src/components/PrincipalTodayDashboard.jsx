@@ -5,10 +5,10 @@ import { Card } from "./ui/card";
 
 function StatCard({ title, value, subtitle, accent = "#1e40af" }) {
   return (
-    <div className="card narrow animate-scale-in">
-      <div className="stats_card" style={{ background: 'white', color: '#1f2937' }}>
-        <div className="stats_number" style={{ color: accent }}>{value}</div>
-        <div className="stats_label" style={{ color: '#6b7280' }}>{title}</div>
+    <div className="bg-white bg-opacity-95 backdrop-filter backdrop-blur-xl border border-white border-opacity-20 rounded-2xl p-6 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 animate-scale-in">
+      <div className="stats_card" style={{ background: 'transparent', color: '#1f2937' }}>
+        <div className="stats_number text-3xl font-bold mb-2" style={{ color: accent }}>{value}</div>
+        <div className="stats_label text-sm font-medium" style={{ color: '#6b7280' }}>{title}</div>
         {subtitle && <div className="text-xs mt-2" style={{ color: '#6b7280' }}>{subtitle}</div>}
       </div>
     </div>
