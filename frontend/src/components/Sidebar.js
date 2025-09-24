@@ -150,14 +150,16 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle }) => {
         />
       )}
       
-      {/* Mobile Menu Toggle Button - Only for SCHOOL_ADMIN/CO_ADMIN */}
+      {/* Mobile Menu Toggle Button - Only for SCHOOL_ADMIN/CO_ADMIN on mobile */}
       {(me?.role === 'SCHOOL_ADMIN' || me?.role === 'CO_ADMIN') && (
         <button
           onClick={toggle}
-          className="fixed top-4 left-4 z-50 lg:hidden p-2 bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm rounded-xl shadow-lg border border-white border-opacity-30"
+          className="fixed top-20 left-4 z-50 lg:hidden p-3 bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm rounded-xl shadow-lg border border-white border-opacity-30 hover:bg-opacity-100 transition-all duration-200"
           title={isCollapsed ? 'Open menu' : 'Close menu'}
         >
-          {isCollapsed ? '☰' : '✕'}
+          <span className="text-lg font-bold text-gray-700">
+            {isCollapsed ? '☰' : '✕'}
+          </span>
         </button>
       )}
       
