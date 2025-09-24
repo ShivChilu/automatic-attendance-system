@@ -206,6 +206,10 @@ export default function TeacherAttendanceFlow({ me }) {
     }
   };
 
+  const toggleCameraFacing = () => {
+    setCameraFacing(prev => prev === "user" ? "environment" : "user");
+  };
+
   const locked = !!detail?.session?.locked;
   const submittedAt = detail?.session?.submitted_at ? new Date(detail.session.submitted_at) : null;
   const canEditLocked = useMemo(() => {
