@@ -890,14 +890,26 @@ function App() {
               <div className="user_email" style={{ color: '#374151' }}>{me.email}</div>
               <div className="user_role" style={{ color: '#1e40af', backgroundColor: '#eff6ff' }}>{me.role.replace('_', ' ')}</div>
             </div>
-            {/* Mobile Notifications Button */}
-            <button
-              onClick={() => setCurrentSection('my-messages')}
-              className="sm:hidden p-2 text-gray-600 hover:text-blue-600 transition-colors mr-2"
-              title="My Messages"
-            >
-              <span className="text-xl">📩</span>
-            </button>
+            {/* Mobile Notifications Button - Only for Teachers */}
+            {me.role === 'TEACHER' && (
+              <button
+                onClick={() => setCurrentSection('my-messages')}
+                className="sm:hidden p-2 text-gray-600 hover:text-blue-600 transition-colors mr-2"
+                title="My Messages"
+              >
+                <span className="text-xl">📩</span>
+              </button>
+            )}
+            {/* Mobile Logout Button - For Principals */}
+            {(me.role === 'SCHOOL_ADMIN' || me.role === 'CO_ADMIN') && (
+              <button
+                onClick={() => setToken("")}
+                className="sm:hidden p-2 text-red-600 hover:text-red-800 transition-colors mr-2"
+                title="Logout"
+              >
+                <span className="text-xl">🚪</span>
+              </button>
+            )}
             {/* Desktop Logout Button */}
             <Button className="btn_secondary hidden sm:block" onClick={() => setToken("")}> 
               🚪 Logout
