@@ -277,8 +277,8 @@ export default function TeacherAttendanceFlow({ me }) {
             <div className="lg:col-span-2">
               <div className={`bg-gradient-to-br from-green-50 to-blue-50 border-2 rounded-xl p-6 ${locked ? 'opacity-60 pointer-events-none' : 'border-green-200'}`}>
                 <CameraCapture 
-                  facingMode={'user'}
-                  onToggleFacing={()=>{}}
+                  facingMode={cameraFacing}
+                  onToggleFacing={toggleCameraFacing}
                   onCapture={(blob)=>onCapture(blob)} 
                   captureLabel={isScanning ? "🔍 Scanning..." : (locked ? "🔒 Session Locked" : "📸 Scan Student Face")} 
                 />
