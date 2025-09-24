@@ -128,7 +128,7 @@ export default function PrincipalTodayDashboard({ me }) {
 
       {/* Attendance Progress Bar */}
       {overview && (
-        <div className="card wide animate-slide-in">
+        <div className="bg-white bg-opacity-95 backdrop-filter backdrop-blur-xl border border-white border-opacity-20 rounded-2xl p-6 shadow-lg animate-slide-in">
           <h4 className="text-lg font-semibold mb-4 text-gray-800">📊 Overall Attendance Progress</h4>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
