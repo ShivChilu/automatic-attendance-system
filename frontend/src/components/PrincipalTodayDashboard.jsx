@@ -197,7 +197,7 @@ export default function PrincipalTodayDashboard({ me }) {
 
       {/* Teachers Activity */}
       {overview?.teachers_activity && overview.teachers_activity.length > 0 && (
-        <div className="card wide animate-slide-in">
+        <div className="bg-white bg-opacity-95 backdrop-filter backdrop-blur-xl border border-white border-opacity-20 rounded-2xl p-6 shadow-lg animate-slide-in">
           <h4 className="text-lg font-semibold mb-4 text-gray-800">👨‍🏫 Teachers Activity Today</h4>
           <div className="space-y-3">
             {overview.teachers_activity.map((teacher, index) => (
