@@ -99,7 +99,7 @@ export default function PrincipalTodayDashboard({ me }) {
       </div>
 
       {/* Main Statistics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         <StatCard 
           title="Total Students" 
           value={overview?.total_students || 0} 
