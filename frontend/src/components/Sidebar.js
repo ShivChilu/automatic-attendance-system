@@ -150,8 +150,8 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle, onLogout }) =>
         />
       )}
       
-      {/* Mobile Menu Toggle Button - Only for SCHOOL_ADMIN/CO_ADMIN on mobile */}
-      {(me?.role === 'SCHOOL_ADMIN' || me?.role === 'CO_ADMIN') && (
+      {/* Mobile Menu Toggle Button - For GOV_ADMIN, SCHOOL_ADMIN/CO_ADMIN on mobile */}
+      {(me?.role === 'GOV_ADMIN' || me?.role === 'SCHOOL_ADMIN' || me?.role === 'CO_ADMIN') && (
         <button
           onClick={toggle}
           className="fixed top-20 left-4 z-50 lg:hidden p-3 bg-white bg-opacity-90 backdrop-filter backdrop-blur-sm rounded-xl shadow-lg border border-white border-opacity-30 hover:bg-opacity-100 transition-all duration-200"
