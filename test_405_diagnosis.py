@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Specific test to reproduce and diagnose the 405 Method Not Allowed error 
-for POST /api/students/enroll at https://smart-attendance-30.preview.emergentagent.com/api
+for POST /api/students/enroll at https://sidebar-mobile-debug.preview.emergentagent.com/api
 """
 
 import requests
@@ -11,7 +11,7 @@ from datetime import datetime
 
 class EnrollmentDiagnosticTester:
     def __init__(self):
-        self.base_url = "https://smart-attendance-30.preview.emergentagent.com/api"
+        self.base_url = "https://sidebar-mobile-debug.preview.emergentagent.com/api"
         self.gov_token = None
         self.school_token = None
         self.school_id = None
@@ -315,7 +315,7 @@ class EnrollmentDiagnosticTester:
         
         url = f"{self.base_url}/students/enroll"
         headers = {
-            'Origin': 'https://smart-attendance-30.preview.emergentagent.com',
+            'Origin': 'https://sidebar-mobile-debug.preview.emergentagent.com',
             'Access-Control-Request-Method': 'POST',
             'Access-Control-Request-Headers': 'authorization,content-type'
         }
