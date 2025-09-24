@@ -4,7 +4,7 @@ import base64
 from pymongo import MongoClient
 
 class EmbeddingsFilterTest:
-    def __init__(self, base_url="https://sidebar-mobile-debug.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://teacher-logout-bug.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.school_token = None
         self.section_id = None
