@@ -914,13 +914,12 @@ function App() {
             onToggle={(collapsed) => setSidebarCollapsed(collapsed)}
           />
         )}
-        <main style={{ 
-          flex: 1, 
-          marginLeft: showSidebar ? (sidebarCollapsed ? '0' : '288px') : '0',
-          transition: 'margin-left 0.3s ease',
-          minHeight: 'calc(100vh - 70px)',
-          paddingBottom: (me?.role === 'TEACHER') ? '80px' : '0' // Only add space for teachers
-        }}>
+        <main className="flex-1 min-h-[calc(100vh-70px)] transition-all duration-300 lg:ml-0" 
+              style={{
+                marginLeft: showSidebar && !sidebarCollapsed && window.innerWidth >= 1024 ? '288px' : '0',
+                paddingBottom: (me?.role === 'TEACHER') ? '80px' : '0', // Only add space for teachers
+                paddingTop: (me?.role === 'SCHOOL_ADMIN' || me?.role === 'CO_ADMIN') && window.innerWidth < 1024 ? '60px' : '0' // Add top padding for mobile menu button
+              }}>
           {content}
         </main>
       </div>
