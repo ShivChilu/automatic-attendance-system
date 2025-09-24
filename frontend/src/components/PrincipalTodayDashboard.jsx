@@ -250,7 +250,7 @@ export default function PrincipalTodayDashboard({ me }) {
 
       {/* No data message */}
       {overview && overview.total_present === 0 && (
-        <div className="card wide animate-slide-in">
+        <div className="bg-white bg-opacity-95 backdrop-filter backdrop-blur-xl border border-white border-opacity-20 rounded-2xl p-6 shadow-lg animate-slide-in">
           <div className="text-center py-8">
             <div className="text-6xl mb-4">📝</div>
             <h4 className="text-lg font-semibold text-gray-800 mb-2">No Attendance Marked Today</h4>
