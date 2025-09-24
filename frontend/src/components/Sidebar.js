@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
 
 const Sidebar = ({ me, currentSection, onSectionChange, onToggle, onLogout }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // On mobile, start collapsed by default
+    const isMobile = window.innerWidth < 1024; // lg breakpoint
+    const saved = localStorage.getItem('sidebar_collapsed');
+    if (saved !== null) return saved === 'true';
+    return isMobile; // Default to collapsed on mobile, open on desktop
+  });
 
   useEffect(() => {
     const saved = localStorage.getItem('sidebar_collapsed');
-    if (saved === 'true') setIsCollapsed(true);
+    if (saved !== null) setIsCollapsed(saved === 'true');
   }, []);
 
   const toggle = () => {
