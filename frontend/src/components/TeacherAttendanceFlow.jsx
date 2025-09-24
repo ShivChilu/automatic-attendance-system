@@ -59,6 +59,9 @@ export default function TeacherAttendanceFlow({ me }) {
   const [isScanning, setIsScanning] = useState(false);
   const [status, setStatus] = useState("");
   const [twinSelect, setTwinSelect] = useState({ open: false, candidates: [], blob: null });
+  
+  // Camera facing mode state
+  const [cameraFacing, setCameraFacing] = useState("environment"); // Default to back camera for attendance
 
   // History of today's sessions
   const [todaySessions, setTodaySessions] = useState([]);
