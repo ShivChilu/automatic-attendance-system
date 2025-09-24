@@ -69,9 +69,9 @@ export default function PrincipalTodayDashboard({ me }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-none mx-0 px-4 lg:px-6 space-y-6">
       {/* Header with live clock */}
-      <div className="card wide animate-slide-in">
+      <div className="bg-white bg-opacity-95 backdrop-filter backdrop-blur-xl border border-white border-opacity-20 rounded-2xl p-6 shadow-lg animate-slide-in">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-xl font-bold text-gray-800">🏫 School Overview - Today</h3>
