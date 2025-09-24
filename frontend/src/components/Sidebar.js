@@ -273,8 +273,9 @@ const Sidebar = ({ me, currentSection, onSectionChange, onToggle, onLogout }) =>
                 if (item.id === 'profile') {
                   // Show profile dropdown or handle logout
                   if (confirm('Do you want to logout?')) {
-                    // This would need to be passed from parent component
-                    window.location.reload(); // Temporary solution
+                    if (onLogout) {
+                      onLogout();
+                    }
                   }
                 } else {
                   onSectionChange(item.id);
