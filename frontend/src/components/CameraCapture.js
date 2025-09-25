@@ -68,7 +68,7 @@ export default function CameraCapture({ facingMode = "user", onToggleFacing, onC
   return (
     <div className="camera_box">
       <div className="video_wrap" style={{ position: 'relative', overflow: 'hidden' }}>
-        <video ref={videoRef} playsInline muted autoPlay className="video" />
+        <video ref={videoRef} playsInline muted autoPlay className="video" style={{ width: '100%', height: '100%' }} />
         {!ready && (
           <div style={{
             position: 'absolute',
