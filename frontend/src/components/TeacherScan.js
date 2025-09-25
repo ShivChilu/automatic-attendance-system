@@ -157,12 +157,14 @@ export default function TeacherScan({ me }) {
           </div>
 
           <div className="bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-200 rounded-xl p-6 mt-4">
-            <CameraCapture 
-              facingMode={facingMode} 
-              onToggleFacing={()=>setFacingMode(facingMode === 'user' ? 'environment' : 'user')} 
-              onCapture={(blob)=>onCapture(blob)} 
-              captureLabel={isScanning ? "🔍 Scanning..." : "📸 Scan Student Face"} 
-            />
+            <div style={{maxWidth: '100%', borderRadius: '16px', overflow: 'hidden'}}>
+              <CameraCapture 
+                facingMode={facingMode} 
+                onToggleFacing={()=>setFacingMode(facingMode === 'user' ? 'environment' : 'user')} 
+                onCapture={(blob)=>onCapture(blob)} 
+                captureLabel={isScanning ? "🔍 Scanning..." : "📸 Scan Student Face"} 
+              />
+            </div>
             
             <div className="mt-4 p-4 bg-white bg-opacity-70 rounded-lg">
               <div className="flex gap-3 items-center">
