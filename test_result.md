@@ -105,6 +105,17 @@
 user_problem_statement: "School Face Recognition Attendance System: Replace existing face detection system with MediaPipe Face Mesh + MobileFaceNet (TFLite) for better performance and offline capability. Implement hybrid approach for real-time face recognition attendance marking in schools."
 
 backend:
+  - task: "Face recognition speed/accuracy optimization"
+    implemented: true
+    working: "NA"
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: false
+          agent: "main"
+          comment: "Switched detection to MediaPipe FaceDetection (BlazeFace) for CPU speed, added eye alignment + histogram equalization, RGB normalization for MobileFaceNet, section-level embedding cache with TTL, configurable cosine threshold via FACE_SIM_THRESHOLD, enrollment augments to store multiple embeddings per student. Expect <1s on mobile upload."
   - task: "Teacher/Co-Admin creation payload handling"
     implemented: true
     working: true
