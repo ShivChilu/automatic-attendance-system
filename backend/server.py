@@ -1141,22 +1141,34 @@ async def mark_attendance(
     if not emb:
         raise HTTPException(status_code=400, detail=f"No embedding generated: {e2}")
 
-    students = await db.students.find({"section_id": chosen_section}).to_list(2000)
+    # Load section embeddings with caching to speed up repeated scans
+    import time
+    now_ts = time.time()
+    cache = SECTION_EMB_CACHE.get(chosen_section)
+    if not cache or (now_ts - cache.get("ts", 0)) > SECTION_EMB_TTL_SECONDS:
+        students = await db.students.find({"section_id": chosen_section, "embeddings.0": {"$exists": True}}).to_list(5000)
+        emb_index = []  # list of (student_id, name, [embs])
+        for s in students:
+            e = s.get("embeddings") or []
+            if isinstance(e, list) and len(e) > 0:
+                emb_index.append((s["id"], s["name"], e))
+        SECTION_EMB_CACHE[chosen_section] = {"ts": now_ts, "index": emb_index}
+        cache = SECTION_EMB_CACHE[chosen_section]
+    emb_index = cache.get("index", [])
+
     best_id = None
     best_name = None
     best_sim = -1.0
-
-    for s in students:
-        s_embs = s.get("embeddings", [])
+    # Compute similarity against all embeddings and take max per student
+    for sid, sname, s_embs in emb_index:
         sims = [_cosine_sim(emb, e) for e in s_embs if isinstance(e, list)]
         sim = max(sims) if sims else -1.0
         if sim > best_sim:
             best_sim = sim
-            best_id = s["id"]
-            best_name = s["name"]
+            best_id = sid
+            best_name = sname
 
-    threshold = 0.90
-    if best_sim < threshold:
+    if best_sim < FACE_SIM_THRESHOLD:
         return AttendanceMarkResponse(status="Not a student from this section")
 
     stu = await db.students.find_one({"id": best_id})
