@@ -14,7 +14,7 @@ from datetime import datetime
 import pymongo
 
 class EmbeddingsFilterTester:
-    def __init__(self, base_url="https://teacher-logout-bug.preview.emergentagent.com/api"):
+    def __init__(self, base_url="https://fastface-tracker.preview.emergentagent.com/api"):
         self.base_url = base_url
         self.gov_token = None
         self.school_token = None
