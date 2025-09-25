@@ -1081,6 +1081,7 @@ async def mark_attendance(
     section_id: Optional[str] = Form(None),
     session_id: Optional[str] = Form(None),
     confirmed_student_id: Optional[str] = Form(None),
+    client_ts: Optional[str] = Form(None),
     current: dict = Depends(require_roles('TEACHER')),
 ):
     # Determine section within allowed allotment
