@@ -70,6 +70,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger("backend")
 
 # Auth settings
+# Face similarity threshold (cosine). Tunable via env.
+FACE_SIM_THRESHOLD = float(os.getenv("FACE_SIM_THRESHOLD", "0.72"))
+# Simple in-memory cache for section embeddings to speed up matching
+SECTION_EMB_CACHE: Dict[str, Dict[str, Any]] = {}
+SECTION_EMB_TTL_SECONDS = int(os.getenv("SECTION_EMB_TTL_SECONDS", "60"))
+
 JWT_SECRET = os.getenv("JWT_SECRET", secrets.token_urlsafe(32))
 JWT_ALGO = os.getenv("JWT_ALGO", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "720"))
