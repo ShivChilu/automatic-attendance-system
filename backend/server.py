@@ -320,6 +320,14 @@ async def _detect_and_crop_face_mesh(image_bytes: bytes):
         return None, "crop_failed"
     # Resize to 112x112 and return BGR image (embedding fn will normalize)
     face = cv2.resize(face, (112,112), interpolation=cv2.INTER_LINEAR)
+    # Soft histogram equalization to handle lighting variance
+    try:
+        ycrcb = cv2.cvtColor(face, cv2.COLOR_BGR2YCrCb)
+        y, cr, cb = cv2.split(ycrcb)
+        y = cv2.equalizeHist(y)
+        face = cv2.cvtColor(cv2.merge([y, cr, cb]), cv2.COLOR_YCrCb2BGR)
+    except Exception:
+        pass
     return face, None
 
 async def _ensure_mobilefacenet_model():
