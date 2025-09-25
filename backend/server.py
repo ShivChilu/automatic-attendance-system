@@ -347,7 +347,9 @@ async def _embed_face_with_mobilefacenet(face_bgr):
         return None, "mobilefacenet_not_available"
     try:
         import numpy as np
-        face = cv2.resize(face_bgr, (112, 112))
+        # Ensure BGR->RGB as most MobileFaceNet models are trained on RGB
+        face = cv2.cvtColor(face_bgr, cv2.COLOR_BGR2RGB)
+        face = cv2.resize(face, (112, 112))
         face = (face.astype(np.float32) - 127.5) / 128.0
         face = np.expand_dims(face, axis=0)
         input_details = inter.get_input_details()[0]
