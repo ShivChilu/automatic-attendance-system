@@ -40,10 +40,14 @@ export default function TeacherScan({ me }) {
       const fd = new FormData();
       fd.append("image", blob, "scan.jpg");
       if (section?.id) fd.append("section_id", section.id);
-      
+      // Add a client timestamp to help debug slowness if any
+      fd.append("client_ts", Date.now().toString());
+      const start = performance.now();
       const res = await api.post("/attendance/mark", fd, { 
         headers: { "Content-Type": "multipart/form-data" } 
       });
+      const durationMs = Math.round(performance.now() - start);
+      console.log(`Attendance scan took ${durationMs} ms`);
       
       // Twin disambiguation flow with modal UI
       if (res.data?.twin_conflict && Array.isArray(res.data?.twin_candidates)) {
