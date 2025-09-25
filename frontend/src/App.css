@@ -880,9 +880,23 @@ body::before {
 
 .video {
   width: 100%;
-  height: 240px;
+  height: 360px;
   object-fit: cover;
   display: block;
+}
+
+/* Mobile phones: increase height for better UX on small screens */
+@media (max-width: 480px) {
+  .video {
+    height: 420px;
+  }
+}
+
+/* Large screens: show bigger preview */
+@media (min-width: 1024px) {
+  .video {
+    height: 480px;
+  }
 }
 
 .camera_actions {
