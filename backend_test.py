@@ -3276,6 +3276,10 @@ except Exception as e:
         if not self.test_auth_me_school():
             print("❌ Failed to get school info")
             return False
+        
+        # Use the seeded school ID if available
+        if self.school_id:
+            self.created_school_id = self.school_id
             
         # Create a test section if needed
         if not self.section_id:
