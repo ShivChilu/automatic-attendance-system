@@ -250,43 +250,70 @@ async def _ensure_face_mesh():
     return FACE_MESH
 
 async def _detect_and_crop_face_mesh(image_bytes: bytes):
+    """
+    Fast path using MediaPipe FaceDetection. Also performs eye-based alignment and
+    returns a tightly cropped, normalized 112x112 BGR face ready for embedding.
+    """
     try:
         import numpy as np
         import cv2  # type: ignore
         from PIL import Image
-    except Exception as e:
-        return None, "face_mesh_not_available"
-    fm = await _ensure_face_mesh()
-    if fm is None:
-        return None, "face_mesh_not_available"
-    import io
-    img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-    arr = np.array(img)
-    h, w = arr.shape[:2]
-    try:
+        import math
         import mediapipe as mp  # type: ignore
     except Exception:
         return None, "face_mesh_not_available"
-    rgb = cv2.cvtColor(arr, cv2.COLOR_BGR2RGB)
-    res = fm.process(rgb)
-    if not res.multi_face_landmarks:
+    detector = await _ensure_face_mesh()
+    if detector is None:
+        return None, "face_mesh_not_available"
+    import io
+    img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+    bgr = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+    h, w = bgr.shape[:2]
+    # Run detector
+    results = detector.process(cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB))
+    if not results.detections:
         return None, "no_face"
-    x_min, y_min, x_max, y_max = w, h, 0, 0
-    for lm in res.multi_face_landmarks[0].landmark:
-        x = int(lm.x * w)
-        y = int(lm.y * h)
-        x_min = min(x_min, x)
-        y_min = min(y_min, y)
-        x_max = max(x_max, x)
-        y_max = max(y_max, y)
-    pad = 20
-    x0 = max(0, x_min - pad)
-    y0 = max(0, y_min - pad)
-    x1 = min(w, x_max + pad)
-    y1 = min(h, y_max + pad)
-    face = arr[y0:y1, x0:x1]
+    det = results.detections[0]
+    # Bounding box
+    bbox = det.location_data.relative_bounding_box
+    x0 = max(0, int(bbox.xmin * w))
+    y0 = max(0, int(bbox.ymin * h))
+    x1 = min(w, int((bbox.xmin + bbox.width) * w))
+    y1 = min(h, int((bbox.ymin + bbox.height) * h))
+    # Extract keypoints (eyes)
+    kp = det.location_data.relative_keypoints
+    if len(kp) >= 2:
+        left_eye = (int(kp[0].x * w), int(kp[0].y * h))
+        right_eye = (int(kp[1].x * w), int(kp[1].y * h))
+        dy = right_eye[1] - left_eye[1]
+        dx = right_eye[0] - left_eye[0]
+        angle = math.degrees(math.atan2(dy, dx))
+        # Rotate image to make eyes horizontal
+        center = ( (left_eye[0] + right_eye[0]) // 2, (left_eye[1] + right_eye[1]) // 2 )
+        M = cv2.getRotationMatrix2D(center, angle, 1.0)
+        bgr = cv2.warpAffine(bgr, M, (w, h), flags=cv2.INTER_LINEAR)
+        # Rotate bbox corners
+        def rot(p):
+            x, y = p
+            rx = M[0,0]*x + M[0,1]*y + M[0,2]
+            ry = M[1,0]*x + M[1,1]*y + M[1,2]
+            return int(rx), int(ry)
+        x0,y0 = rot((x0,y0)); x1,y1 = rot((x1,y1))
+        # Ensure proper box after rotation
+        x0, x1 = max(0, min(x0, x1)), min(w, max(x0, x1))
+        y0, y1 = max(0, min(y0, y1)), min(h, max(y0, y1))
+    # Expand and crop square
+    pad = 0.2
+    bw, bh = x1 - x0, y1 - y0
+    cx, cy = x0 + bw/2.0, y0 + bh/2.0
+    side = int(max(bw, bh) * (1.0 + pad))
+    x0 = int(max(0, cx - side/2)); y0 = int(max(0, cy - side/2))
+    x1 = int(min(w, cx + side/2)); y1 = int(min(h, cy + side/2))
+    face = bgr[y0:y1, x0:x1]
     if face.size == 0:
         return None, "crop_failed"
+    # Resize to 112x112 and return BGR image (embedding fn will normalize)
+    face = cv2.resize(face, (112,112), interpolation=cv2.INTER_LINEAR)
     return face, None
 
 async def _ensure_mobilefacenet_model():
