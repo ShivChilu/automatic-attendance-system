@@ -445,6 +445,9 @@ test_plan:
     priority: "high"
     needs_retesting: false
     status_history:
+    - agent: "main"
+      message: "Optimized face pipeline: switched to fast MP FaceDetection, added alignment, caching, and multi-embedding matching; client capture downsizes for speed; threshold configurable. Request backend retest for /api/attendance/mark latency (<1s) and accuracy with multiple embeddings per student."
+
         - working: true
           agent: "testing"
           comment: "PHASE 1 STUDENT ENROLLMENT GENDER FIELD TESTING COMPLETED SUCCESSFULLY: ✅ Gender field functionality working correctly ✅ POST /api/enrollment/students accepts gender='Male' without validation errors (no 422) ✅ POST /api/enrollment/students accepts gender='Female' without validation errors ✅ Invalid gender values handled gracefully (no crashes) ✅ Gender field properly defined in StudentCreate model with Literal['Male','Female','Other'] type (lines 198, 776) ✅ Student model includes gender field with proper typing (lines 217, 665) ✅ Enrollment endpoint returns 400 'No face embeddings could be extracted' as expected in container environment, but gender field is processed correctly. The gender field is fully implemented and working as specified in Phase 1 requirements."
