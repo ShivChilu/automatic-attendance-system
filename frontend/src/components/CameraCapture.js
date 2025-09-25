@@ -44,14 +44,21 @@ export default function CameraCapture({ facingMode = "user", onToggleFacing, onC
     try {
       const video = videoRef.current;
       if (!video) return;
-      const w = video.videoWidth || 640;
-      const h = video.videoHeight || 480;
+      let w = video.videoWidth || 640;
+      let h = video.videoHeight || 480;
+      // Downscale to speed up upload and server processing (max width 640)
+      const maxW = 640;
+      if (w > maxW) {
+        const scale = maxW / w;
+        w = Math.round(w * scale);
+        h = Math.round(h * scale);
+      }
       const canvas = document.createElement("canvas");
       canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0, w, h);
-      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
       onCapture && onCapture(blob, dataUrl);
     } catch (e) {
       setError("Capture failed. Try again or use sample image.");
