@@ -230,37 +230,23 @@ FACE_MESH = None  # MediaPipe Face Mesh initialized on first use
 MOBILEFACENET_MODEL = None  # TFLite model initialized on first use
 
 async def _ensure_face_mesh():
+    """
+    Backward-compatible initializer. Internally switch to fast MediaPipe Face Detection
+    for speed on CPU while keeping the same function name to avoid touching call sites.
+    """
     global FACE_MESH
     if FACE_MESH is None:
         try:
-            # Clear any existing MediaPipe imports to avoid conflicts
-            import sys
-            mediapipe_modules = [module for module in sys.modules.keys() if 'mediapipe' in module]
-            for module in mediapipe_modules:
-                if module in sys.modules:
-                    del sys.modules[module]
             import mediapipe as mp  # type: ignore
-            FACE_MESH = mp.solutions.face_mesh.FaceMesh(
-                static_image_mode=True,
-                max_num_faces=1,
-                refine_landmarks=False,
-                min_detection_confidence=0.3,
-                min_tracking_confidence=0.3
+            # Use FaceDetection (BlazeFace) which returns eye keypoints and is much faster
+            FACE_MESH = mp.solutions.face_detection.FaceDetection(
+                model_selection=0,  # short range
+                min_detection_confidence=0.5
             )
-            logger.info("MediaPipe Face Mesh initialized successfully")
+            logger.info("MediaPipe Face Detection initialized successfully (using FACE_MESH var for compat)")
         except Exception as e:
-            logger.warning(f"MediaPipe Face Mesh not available or failed to initialize: {e}")
-            try:
-                import mediapipe as mp
-                FACE_MESH = mp.solutions.face_mesh.FaceMesh(
-                    static_image_mode=True,
-                    max_num_faces=1,
-                    min_detection_confidence=0.3
-                )
-                logger.info("MediaPipe Face Mesh initialized with minimal config")
-            except Exception as e2:
-                logger.error(f"MediaPipe Face Mesh completely failed to initialize: {e2}")
-                FACE_MESH = None
+            logger.error(f"MediaPipe Face Detection failed to initialize: {e}")
+            FACE_MESH = None
     return FACE_MESH
 
 async def _detect_and_crop_face_mesh(image_bytes: bytes):
