@@ -835,6 +835,15 @@ async def enroll_student(
         emb, e2 = await _embed_face_with_mobilefacenet(face)
         if emb:
             embeddings.append(emb)
+            # Simple augmentation: slight brightness jitter to improve robustness
+            try:
+                import numpy as np, cv2
+                aug = cv2.convertScaleAbs(face, alpha=1.05, beta=5)
+                emb2, _ = await _embed_face_with_mobilefacenet(aug)
+                if emb2:
+                    embeddings.append(emb2)
+            except Exception:
+                pass
         else:
             logger.warning(f"Face embedding failed: {e2}")
     if len(embeddings) < 1:
