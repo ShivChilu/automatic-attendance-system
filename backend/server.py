@@ -1146,6 +1146,23 @@ async def mark_attendance(
         return AttendanceMarkResponse(status=f"{stu['name']} is marked present, scan next student", student_id=confirmed_student_id, student_name=stu["name"], similarity=None, twin_conflict=False)
 
     data = await image.read()
+    # Optional: quickly downscale very large images to 1280px max width for speed
+    try:
+        import cv2, numpy as np
+        from PIL import Image
+        import io
+        img = Image.open(io.BytesIO(data)).convert('RGB')
+        arr = np.array(img)
+        h, w = arr.shape[:2]
+        maxw = 1280
+        if w > maxw:
+            scale = maxw / w
+            neww, newh = int(w*scale), int(h*scale)
+            arr = cv2.resize(arr, (neww, newh), interpolation=cv2.INTER_AREA)
+            _, enc = cv2.imencode('.jpg', cv2.cvtColor(arr, cv2.COLOR_RGB2BGR), [int(cv2.IMWRITE_JPEG_QUALITY), 85])
+            data = bytes(enc)
+    except Exception:
+        pass
     face, err = await _detect_and_crop_face_mesh(data)
     if face is None:
         raise HTTPException(status_code=400, detail=f"No face detected: {err}")
