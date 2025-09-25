@@ -2,6 +2,9 @@ import requests
 import sys
 from datetime import datetime
 import json
+import time
+import base64
+import uuid
 
 class AttendanceAPITester:
     def __init__(self, base_url="https://fastface-tracker.preview.emergentagent.com/api"):
